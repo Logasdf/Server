@@ -17,4 +17,4 @@ We are using C++ as the primary language and Visual Studio as IDE.
         - Every x seconds  
         - Only when asked ( like a client clicks "Refresh" button )
 
-- **Write Server Sample Code**
+- ***Write Server Sample Code***
