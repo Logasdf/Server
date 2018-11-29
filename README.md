@@ -10,7 +10,7 @@ We are using C++ as the primary language and Visual Studio as IDE.
 
 - **Write codes for accepting connection requests from clients.**
 - Create a data format for the better communication between the server and the client.
-- Store a client information ( ip addr etc. )
+- Store client information ( ip addr etc. )
 - Manage a list of gamerooms.  
     - Send that list to a client  
         - Whenever a list is modified  
