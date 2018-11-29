@@ -16,3 +16,5 @@ We are using C++ as the primary language and Visual Studio as IDE.
         - Whenever a list is modified  
         - Every x seconds  
         - Only when asked ( like a client clicks "Refresh" button )
+
+- ** Write Server Sample Code **
