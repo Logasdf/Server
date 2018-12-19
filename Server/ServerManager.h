@@ -6,15 +6,27 @@
 #include "SocketInfo.h"
 
 class ServerManager {
-private:
-	WSAData wsaData;
-	SYSTEM_INFO sysInfo;
-
 public:
 	ServerManager();
 	~ServerManager();
-	void InitServer(int prime, int sub);
-	void CreateThread(HANDLE hComPort, unsigned int (WINAPI* ThreadMain)(void*));
+
+	void Start(int port);
+	void Stop();
+
+private:
+	void InitSocket(int port, int prime = 2, int sub = 2);
+	void InitCompletionPort(int maxNumberOfThreads = 0);
+	void AcceptClient();
+	void CloseClient();
+	void CreateThreadPool(int numOfThreads = 0);
+	void ShutdownThreads();
+
+private:
+	WSAData wsaData;
+	HANDLE hCompPort;
+	SOCKET servSock;
 };
+
+unsigned __stdcall ThreadMain(void* pVoid);
 
 #endif
