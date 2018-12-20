@@ -8,7 +8,7 @@ We are using C++ as the primary language and Visual Studio as IDE.
     - ~~Non-Blocking IO~~  
     - ~~How to create an IO completion port and register a socket to it.~~
 - ~~Write Server Sample Code~~
-- **Write codes for accepting connection requests from clients.**
+- ~~**Write codes for accepting connection requests from clients.**~~
 - **Self-Study on Object Serialization in C++**
     - Create a data format for the better communication between the server and the client.
     - Store client information ( ip addr etc. )
