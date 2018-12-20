@@ -10,23 +10,31 @@ public:
 	ServerManager();
 	~ServerManager();
 
-	void Start(int port);
+	void Start(int port=6000);
 	void Stop();
+
+private:
+	static unsigned __stdcall ThreadMain(void* pVoid);
 
 private:
 	void InitSocket(int port, int prime = 2, int sub = 2);
 	void InitCompletionPort(int maxNumberOfThreads = 0);
 	void AcceptClient();
-	void CloseClient();
+	void CloseClient(SocketInfo* lpSocketInfo, bool graceful = false);
 	void CreateThreadPool(int numOfThreads = 0);
 	void ShutdownThreads();
+	bool SendPacket(SocketInfo* lpSocketInfo);
+	bool RecvPacket(SocketInfo* lpSocketInfo);
+	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
+	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 
 private:
 	WSAData wsaData;
 	HANDLE hCompPort;
 	SOCKET servSock;
-};
 
-unsigned __stdcall ThreadMain(void* pVoid);
+	int threadPoolSize;
+	HANDLE hMutexObj;
+};
 
 #endif

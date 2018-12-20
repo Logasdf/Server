@@ -1,33 +1,34 @@
 #include "SocketInfo.h"
 #include "ErrorHandle.h"
+#include <cassert>
 
-SocketInfo::SocketInfo() {}
-
-SocketInfo::SocketInfo(const SOCKET& sock, const SOCKADDR_IN& addr)
+SocketInfo::SocketInfo() 
 {
-	this->socket = sock;
-	memcpy(&(this->sockAdr), &addr, sizeof(this->sockAdr));
+	socket = INVALID_SOCKET;
+	recvBuf = NULL;
+	sendBuf = NULL;
 }
 
-SocketInfo::~SocketInfo()
+SocketInfo::~SocketInfo() {}
+
+SocketInfo* SocketInfo::AllocateSocketInfo(const SOCKET& socket)
 {
-	closesocket(socket);
+	SocketInfo* lpSocketInfo = new SocketInfo();
+	assert(lpSocketInfo != NULL);
+	lpSocketInfo->socket = socket;
+	lpSocketInfo->recvBuf = IOInfo::AllocateIoInfo();
+	lpSocketInfo->sendBuf = IOInfo::AllocateIoInfo();
+
+	return lpSocketInfo;
 }
 
-void SocketInfo::SocketSetup(int port)
+void SocketInfo::DeallocateSocketInfo(SocketInfo* lpSocketInfo)
 {
-	socket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-	sockAdr.sin_family = AF_INET;
-	sockAdr.sin_addr.s_addr = htonl(INADDR_ANY);
-	sockAdr.sin_port = htons(port);
-}
-
-const SOCKET& SocketInfo::getSocket()
-{
-	return this->socket;
-}
-
-const SOCKADDR_IN& SocketInfo::getSocketAdr()
-{
-	return this->sockAdr;
+	assert(lpSocketInfo != NULL);
+	if (lpSocketInfo->recvBuf != NULL) 
+		IOInfo::DeallocateIoInfo(lpSocketInfo->recvBuf);
+	if (lpSocketInfo->sendBuf != NULL)
+		IOInfo::DeallocateIoInfo(lpSocketInfo->sendBuf);
+	lpSocketInfo->socket = INVALID_SOCKET;
+	free(lpSocketInfo);
 }

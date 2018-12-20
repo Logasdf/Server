@@ -2,22 +2,20 @@
 #define __SOCKET_INFO_H__
 
 #include <WinSock2.h>
+#include "IOInfo.h"
 
 class SocketInfo {
-private:
-	SOCKET socket;
-	SOCKADDR_IN sockAdr;
-public :
+public:
 	SocketInfo();
-	SocketInfo(const SOCKET& sock, const SOCKADDR_IN& sockAdr);
 	~SocketInfo();
 	
-	void SocketSetup(int port);
-	const SOCKET& getSocket();
-	const SOCKADDR_IN& getSocketAdr();
+public:
+	static SocketInfo* AllocateSocketInfo(const SOCKET& socket);
+	static void DeallocateSocketInfo(SocketInfo* lpSocketInfo);
+
+public:
+	SOCKET socket;
+	IOInfo* recvBuf;
+	IOInfo* sendBuf;
 };
-
-typedef SocketInfo SOCKET_INFO;
-typedef SocketInfo* LPSOCKET_INFO;
-
 #endif

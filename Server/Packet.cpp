@@ -1,13 +1,29 @@
 #include "Packet.h"
-#include <cstdlib>
+#include <cassert>
+#include <cstring>
 
-Packet::Packet(int size)
+Packet::Packet() {}
+
+Packet::~Packet() {}
+
+void Packet::ClearBuffer()
 {
-	len = size;
-	buffer = (char*)malloc(size);
+	memset(buffer, 0, MAX_SIZE);
 }
 
-Packet::~Packet()
+void Packet::Serialize(std::string& stream)
 {
-	free(buffer);
+	//this->buffer = stream;
+}
+
+Packet* Packet::AllocatePacket()
+{
+	Packet* lpPacket = new Packet();
+	return lpPacket;
+}
+
+void Packet::DeallocatePacket(Packet* lpPacket)
+{
+	assert(lpPacket != NULL);
+	free(lpPacket);
 }

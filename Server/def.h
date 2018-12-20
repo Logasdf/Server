@@ -11,3 +11,8 @@ typedef unsigned (__stdcall *PTHREAD_START) (void *);
          (void *)        (pvParam),                 \
          (unsigned)      (fdwCreate),               \
          (unsigned *)    (pdwThreadId)))
+
+
+#define LOG(s) printf("[Log]: %s\n", s);
+
+#define KILL_THREAD 9

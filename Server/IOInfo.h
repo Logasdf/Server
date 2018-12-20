@@ -6,19 +6,19 @@
 #include <Windows.h>
 
 class IOInfo {
-private:
-	OVERLAPPED overlapped;
-	WSABUF wsaBuf;
-	LPPACKET pPacket;
 public:
 	IOInfo();
-	IOInfo(int);
 	~IOInfo();
-	OVERLAPPED& getOverlapped();
-	WSABUF& getWsaBuf();
-};
 
-typedef IOInfo IO_INFO;
-typedef IOInfo* LPIO_INFO;
+public:
+	static IOInfo* AllocateIoInfo();
+	static void DeallocateIoInfo(IOInfo* lpIoInfo);
+
+public:
+	OVERLAPPED overlapped;
+	WSABUF wsaBuf;
+	Packet* lpPacket;
+	char buffer[MAX_SIZE];
+};
 
 #endif
