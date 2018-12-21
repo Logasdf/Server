@@ -2,15 +2,37 @@
 #include <cstdlib>
 #include <cassert>
 #include <process.h>
+#include <string>
 #include "ServerManager.h"
 #include "ErrorHandle.h"
 #include "def.h"
+#include "Packet.h"
+
+void ServerManager::InitRoomList()
+{
+	for (int i = 0; i < 5; ++i)
+	{
+		packet::Room* pRoom = roomList.add_rooms();
+		pRoom->set_name("Room #" + std::to_string(i + 1));
+		pRoom->set_limit(10 - i);
+		pRoom->set_current(8 - i);
+	}
+}
 
 ServerManager::ServerManager() 
 { 
 	hCompPort = NULL; 
 	servSock = INVALID_SOCKET;
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
+
+	InitRoomList();
+
+
+	//for (int i = 0; i < roomList.rooms_size(); ++i)
+	//{
+	//	const Room& r = roomList.rooms(i);
+	//	printf("Name: %s, Limits: %d, Current: %d\n", r.name(), r.limit(), r.current());
+	//}
 }
 
 ServerManager::~ServerManager() 
@@ -217,11 +239,28 @@ void ServerManager::AcceptClient()
 				continue;
 			}
 
-			// 초기 Recv 요청
-			DWORD dwFlags = 0;
+			// Connect시 Client에서 RoomList을 전달
+			DWORD dwFlags, dwSendBytes;
+			dwFlags = dwSendBytes = 0;
+			ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(OVERLAPPED));
+
+			// Serialize Room List;
+			lpSocketInfo->sendBuf->wsaBuf.len = 
+				lpSocketInfo->sendBuf->lpPacket->Serialize<RoomList>(roomList);
+			if (WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
+				&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL) == SOCKET_ERROR)
+			{
+				int errCode = WSAGetLastError();
+				if (errCode != WSA_IO_PENDING)
+				{
+					ErrorHandling("Init Send Operation(Send Room List) Error!!", errCode, false);
+					continue;
+				}
+			}
+
+			/*DWORD dwFlags = 0;
 			DWORD dwRecvBytes = 0;
 			ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(lpSocketInfo->recvBuf->buffer, MAX_SIZE);
 			if (WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
 				&dwRecvBytes, &dwFlags, &(lpSocketInfo->recvBuf->overlapped), NULL)
 				== SOCKET_ERROR)
@@ -231,7 +270,7 @@ void ServerManager::AcceptClient()
 					ErrorHandling("Init Recv Operation Error!!", errCode, false);
 					continue;
 				}
-			}
+			}*/
 		}
 		__finally
 		{
@@ -341,6 +380,8 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
+	if (!RecvPacket(lpSocketInfo))
+		return false;
 
 	return true;
 }

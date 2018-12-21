@@ -18,7 +18,6 @@ public:
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
 	Packet* lpPacket;
-	char buffer[MAX_SIZE];
 };
 
 #endif

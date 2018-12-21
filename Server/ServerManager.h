@@ -4,6 +4,7 @@
 #include <WinSock2.h>
 #include <Windows.h>
 #include "SocketInfo.h"
+#include "protobuf/room.pb.h"
 
 class ServerManager {
 public:
@@ -28,6 +29,10 @@ private:
 	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 
+
+	//Temperary Method
+	void InitRoomList();
+
 private:
 	WSAData wsaData;
 	HANDLE hCompPort;
@@ -35,6 +40,8 @@ private:
 
 	int threadPoolSize;
 	HANDLE hMutexObj;
+
+	RoomList roomList;
 };
 
 #endif

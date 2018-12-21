@@ -1,19 +1,30 @@
 #include "Packet.h"
-#include <cassert>
-#include <cstring>
 
-Packet::Packet() {}
+Packet::TypeMap Packet::typeMap = {
+	{typeid(RoomList), TYPE_ROOMLIST}
+};
 
-Packet::~Packet() {}
-
-void Packet::ClearBuffer()
+Packet::Packet() 
 {
 	memset(buffer, 0, MAX_SIZE);
+
+	aos = new ArrayOutputStream(buffer, MAX_SIZE);
+	cos = new CodedOutputStream(aos);
+	//ais = new ArrayInputStream(inBuffer, MAX_SIZE);
+	//aos = new ArrayOutputStream(outBuffer, MAX_SIZE);
+	//cis = new CodedInputStream(ais);
+	//cos = new CodedOutputStream(aos);
 }
 
-void Packet::Serialize(std::string& stream)
+Packet::~Packet() 
 {
-	//this->buffer = stream;
+	delete cos;
+	delete aos;
+}
+
+void Packet::ClearBuffer(bool isOut)
+{
+	memset(buffer, 0, MAX_SIZE);
 }
 
 Packet* Packet::AllocatePacket()
@@ -25,5 +36,5 @@ Packet* Packet::AllocatePacket()
 void Packet::DeallocatePacket(Packet* lpPacket)
 {
 	assert(lpPacket != NULL);
-	free(lpPacket);
+	delete lpPacket;
 }
