@@ -14,6 +14,7 @@ We are using C++ as the primary language and Visual Studio as IDE.
     - ~~Store client information ( ip addr etc. )~~
     - ~~Use "Protocol Buffer" for communication between the server(C++) and client(C#)~~
 - Manage a list of gamerooms.  
-    - Send that list to a client  
-        - Only when asked ( like a client clicks "Refresh" button )
-    - Make the necessary classes.
+    - ~~Send that list to a client  ~~
+        - ~~Only when asked ( like a client clicks "Refresh" button )~~
+    - ~~Make the necessary classes.~~
+    
