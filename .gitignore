@@ -2,3 +2,5 @@
 */*.sln
 */*.vcxproj*
 */Debug/
+*/*.bmp
+*/*.cd
