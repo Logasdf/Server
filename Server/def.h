@@ -16,3 +16,6 @@ typedef unsigned (__stdcall *PTHREAD_START) (void *);
 #define LOG(s) printf("[Log]: %s\n", s);
 
 #define KILL_THREAD 9
+
+#define PORT 9910
+#define IP "127.0.0.1"

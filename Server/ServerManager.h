@@ -3,6 +3,7 @@
 
 #include <WinSock2.h>
 #include <Windows.h>
+#include "def.h"
 #include "SocketInfo.h"
 #include "protobuf/room.pb.h"
 
@@ -11,7 +12,7 @@ public:
 	ServerManager();
 	~ServerManager();
 
-	void Start(int port=6000);
+	void Start(int port=PORT);
 	void Stop();
 
 private:

@@ -50,12 +50,14 @@ inline int Packet::Serialize(T& message)
 	ClearBuffer();
 	int type = typeMap[typeid(T)];
 	int contentLength = message.ByteSize();
+	//cos->WriteVarint32(type);
+	//cos->WriteVarint32(contentLength);
 	cos->WriteLittleEndian32(type);
 	cos->WriteLittleEndian32(contentLength);
 	message.SerializeToCodedStream(cos);
 
 	return cos->ByteCount();
-
+	//return MAX_SIZE;
 
 	//if (type == TYPE_ROOMLIST) {
 	//	RoomList& ref = dynamic_cast<RoomList&>(message);
