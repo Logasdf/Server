@@ -1,5 +1,4 @@
-#ifndef __IO_INFO_H__
-#define __IO_INFO_H__
+#pragma once
 
 #include "Packet.h"
 #include <WinSock2.h>
@@ -18,6 +17,5 @@ public:
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
 	Packet* lpPacket;
+	bool called;
 };
-
-#endif

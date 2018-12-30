@@ -9,7 +9,9 @@ SocketInfo::SocketInfo()
 	sendBuf = NULL;
 }
 
-SocketInfo::~SocketInfo() {}
+SocketInfo::~SocketInfo() 
+{
+}
 
 SocketInfo* SocketInfo::AllocateSocketInfo(const SOCKET& socket)
 {
@@ -30,5 +32,5 @@ void SocketInfo::DeallocateSocketInfo(SocketInfo* lpSocketInfo)
 	if (lpSocketInfo->sendBuf != NULL)
 		IOInfo::DeallocateIoInfo(lpSocketInfo->sendBuf);
 	lpSocketInfo->socket = INVALID_SOCKET;
-	free(lpSocketInfo);
+	delete lpSocketInfo;
 }

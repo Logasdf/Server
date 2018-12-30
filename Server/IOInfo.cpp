@@ -6,6 +6,7 @@ IOInfo::IOInfo()
 	memset(&(overlapped), 0, sizeof(WSAOVERLAPPED));
 	wsaBuf.len = 0;
 	wsaBuf.buf = NULL;
+	called = false;
 }
 
 IOInfo::~IOInfo() {}

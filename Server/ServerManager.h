@@ -1,5 +1,4 @@
-#ifndef __SERVER_MANAGER_H__
-#define __SERVER_MANAGER_H__
+#pragma once
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -30,7 +29,6 @@ private:
 	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 
-
 	//Temperary Method
 	void InitRoomList();
 
@@ -44,5 +42,3 @@ private:
 
 	RoomList roomList;
 };
-
-#endif

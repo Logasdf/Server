@@ -26,13 +26,6 @@ ServerManager::ServerManager()
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
 
 	InitRoomList();
-
-
-	//for (int i = 0; i < roomList.rooms_size(); ++i)
-	//{
-	//	const Room& r = roomList.rooms(i);
-	//	printf("Name: %s, Limits: %d, Current: %d\n", r.name(), r.limit(), r.current());
-	//}
 }
 
 ServerManager::~ServerManager() 
@@ -76,8 +69,13 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 
 	while (true)
 	{
+		lpSocketInfo = NULL;
+		lpIOInfo = NULL;
+
+		//fprintf(stderr, "[Current Thread #%d] => Enter\n", (HANDLE)GetCurrentThreadId());
 		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
 			reinterpret_cast<ULONG_PTR*>(&lpSocketInfo), reinterpret_cast<LPOVERLAPPED*>(&lpIOInfo), INFINITE);
+		//fprintf(stderr, "[Current Thread #%d] => Exit\n", (HANDLE)GetCurrentThreadId());
 		if (rtn)
 		{
 			if (((DWORD)lpSocketInfo) == KILL_THREAD) break;
@@ -102,14 +100,16 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 
 		try
 		{
+			fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
 			if (dwBytesTransferred == 0)
 			{
-				LOG("Client %d Connection Closed...");
+				fprintf(stderr, "[Log]: Client %d Connection Closed....\n", (HANDLE)lpSocketInfo->socket);
 				throw "[Cause]: dwBytesTransferr == 0";
 			}
 
 			if (lpIOInfo == lpSocketInfo->recvBuf)
 			{
+				LOG("Complete Receiving Message!!");
 				if (!(self->HandleRecvEvent(lpSocketInfo, dwBytesTransferred)))
 				{
 					throw "[Cause]: RecvEvent Handling Error!!";
@@ -117,6 +117,7 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			}
 			else if (lpIOInfo == lpSocketInfo->sendBuf)
 			{
+				LOG("Complete Sending Message!!");
 				if (!(self->HandleSendEvent(lpSocketInfo, dwBytesTransferred)))
 				{
 					throw "[Cause]: SendEvent Handling Error!!";
@@ -245,8 +246,8 @@ void ServerManager::AcceptClient()
 			ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(OVERLAPPED));
 
 			// Serialize Room List;
-			lpSocketInfo->sendBuf->wsaBuf.len = 
-				lpSocketInfo->sendBuf->lpPacket->Serialize<RoomList>(roomList);
+			lpSocketInfo->sendBuf->wsaBuf.len =
+				lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
 			if (WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
 				&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL) == SOCKET_ERROR)
 			{
@@ -257,20 +258,6 @@ void ServerManager::AcceptClient()
 					continue;
 				}
 			}
-
-			/*DWORD dwFlags = 0;
-			DWORD dwRecvBytes = 0;
-			ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
-			if (WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
-				&dwRecvBytes, &dwFlags, &(lpSocketInfo->recvBuf->overlapped), NULL)
-				== SOCKET_ERROR)
-			{
-				int errCode = WSAGetLastError();
-				if (errCode != WSA_IO_PENDING) {
-					ErrorHandling("Init Recv Operation Error!!", errCode, false);
-					continue;
-				}
-			}*/
 		}
 		__finally
 		{
@@ -358,6 +345,9 @@ bool ServerManager::SendPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 {
+	if (lpSocketInfo->recvBuf->called)
+		return true;
+
 	DWORD dwRecvBytes = 0;
 	DWORD dwFlags = 0;
 
@@ -375,34 +365,72 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 		}
 	}
 
+	lpSocketInfo->recvBuf->called = true;
 	return true;
 }
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
+	// Event에 따라 분기처리
+	// 1. 초기 Connection 이후 RoomList Send Completion -> nothing.
+	// 2. Response RoomList -> nothing
+	// 3. Response Created Rooom -> Client state update
+	// 4. Response Enter Room -> Client state update
+
+	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
 	if (!RecvPacket(lpSocketInfo))
 		return false;
 
 	return true;
 }
 
-bool ServerManager::HandleRecvEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
+// TCP는 데이터 경계가 없다는 거 기억하고, 그에 대한 처리 구현해야함... 
+// 일단은 중간에 잘리지 않고 받는다고 가정하고 구현하고 있음...
+bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
 {
-	//ZeroMemory(lpSocketInfo->sendBuf->buffer, MAX_SIZE);
-	//lpSocketInfo->sendBuf->lpPacket->ClearBuffer();
-	//CopyMemory(lpSocketInfo->sendBuf->buffer,
-	//	lpSocketInfo->recvBuf->buffer, dwBytesTransferred);
-	//lpSocketInfo->sendBuf->wsaBuf.len = dwBytesTransferred;
-	//lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	//ZeroMemory(lpSocketInfo->recvBuf->buffer, MAX_SIZE);
+	lpSocketInfo->recvBuf->called = false;
+	// Event에 따라 분기처리
+	// 1. Request RoomList(by refreshing the room list)
+	// 2. Request Create Room (by creating a room)
+	// 3. Request Enter Room (by clicking a room in the room list)
+	// 4.
+	// 그외. Echo
 
-	if (!SendPacket(lpSocketInfo))
-		return false;
+	char method = lpSocketInfo->recvBuf->lpPacket->buffer[0];
+	int type;
+	MessageLite* pMessage;
+	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(method, type, pMessage);
+	if (method == GET)
+	{
+		if (type == REFRESH)
+		{
+			LOG("Request Refresh...");
+			lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+			if (!SendPacket(lpSocketInfo))
+				return false;
+		}
+		else if (type == ENTER)
+		{
+			LOG("Request Etner...");
+		}
+	}
+	else if (method == POST)
+	{
+		if (type == TYPE_ROOM)
+		{
+			Room*& room = (Room*&)pMessage;
+			std::cout << room->name();
+			std::cout << room->limit();
+		}
+	}
 
+	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
 	if (!RecvPacket(lpSocketInfo))
 		return false;
 
 	return true;
 }
+
+
 
 

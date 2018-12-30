@@ -1,5 +1,4 @@
-#ifndef __SOCKET_INFO_H__
-#define __SOCKET_INFO_H__
+#pragma once
 
 #include <WinSock2.h>
 #include "IOInfo.h"
@@ -18,4 +17,3 @@ public:
 	IOInfo* recvBuf;
 	IOInfo* sendBuf;
 };
-#endif
