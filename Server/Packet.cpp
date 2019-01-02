@@ -2,7 +2,10 @@
 #include "def.h"
 
 Packet::TypeMap Packet::typeMap = {
-	{typeid(RoomList), TYPE_ROOMLIST}
+	{typeid(Data), MessageType::DATA},
+	{typeid(RoomList), MessageType::ROOMLIST},
+	{typeid(Room), MessageType::ROOM},
+	{typeid(Client), MessageType::CLIENT}
 };
 
 Packet::Packet() 
@@ -13,7 +16,7 @@ Packet::Packet()
 Packet::~Packet() 
 {}
 
-void Packet::ClearBuffer(bool isOut)
+void Packet::ClearBuffer()
 {
 	memset(buffer, 0, MAX_SIZE);
 }
@@ -24,49 +27,38 @@ int Packet::PackMessage(int type, MessageLite* message)
 	aos = new ArrayOutputStream(buffer, MAX_SIZE);
 	cos = new CodedOutputStream(aos);
 
-	char method;
-	if (message == NULL)
+	if (message != NULL)
 	{
-		method = GET;
-		cos->WriteRaw(&method, 1);
-		cos->WriteLittleEndian32(type);
-	}
-	else
-	{
-		method = POST;
-		cos->WriteRaw(&method, 1);
 		Serialize(cos, message);
+	}
+	else 
+	{	
+		assert(type != -1);
+		cos->WriteLittleEndian32(type);
+		cos->WriteLittleEndian32(0);
 	}
 
 	int rtn = cos->ByteCount();
+
 	delete cos;
 	delete aos;
 	return rtn;
 }
 
-void Packet::UnpackMessage(char& method, int& type, MessageLite*& message)
+void Packet::UnpackMessage(int& type, int& length, MessageLite*& message)
 {
 	ais = new ArrayInputStream(buffer, MAX_SIZE);
 	cis = new CodedInputStream(ais);
 
-	cis->ReadRaw(&method, 1);
 	cis->ReadLittleEndian32((UINT*)&type);
-	if (method == GET)
+	cis->ReadLittleEndian32((UINT*)&length);
+	if(length != 0)
 	{
-		//LOG("GET Method");
-	}
-	else if(method == POST)
-	{
-		//LOG("POST Method");
-		int length;
-		cis->ReadLittleEndian32((UINT*)&length);
-		if (type == TYPE_ROOM)
-		{
-			message = new Room();
-			message->ParseFromCodedStream(cis);
-		}
+		Deserialize(type, cis, message);
 	}
 
+	delete cis;
+	delete ais;
 	ClearBuffer();
 }
 
@@ -78,6 +70,20 @@ void Packet::Serialize(CodedOutputStream*& cos, MessageLite*& message)
 	cos->WriteLittleEndian32(contentType);
 	cos->WriteLittleEndian32(contentLength);
 	message->SerializeToCodedStream(cos);
+}
+
+void Packet::Deserialize(int& type, CodedInputStream*& cis, MessageLite*& message)
+{
+	if (type == MessageType::DATA)
+	{
+		message = new Data();
+	}
+	else
+	{
+		LOG("Type is not defined... Check Type!");
+		return;
+	}
+	message->ParseFromCodedStream(cis);
 }
 
 Packet* Packet::AllocatePacket()

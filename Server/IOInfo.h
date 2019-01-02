@@ -9,6 +9,9 @@ public:
 	IOInfo();
 	~IOInfo();
 
+	//void ClearBackupBuffer();
+	//void BackupReceivedData(int& length);
+
 public:
 	static IOInfo* AllocateIoInfo();
 	static void DeallocateIoInfo(IOInfo* lpIoInfo);
@@ -18,4 +21,8 @@ public:
 	WSABUF wsaBuf;
 	Packet* lpPacket;
 	bool called;
+
+	int backupSize; // backup buffer size at current time;
+	char backup[MAX_SIZE];
+
 };

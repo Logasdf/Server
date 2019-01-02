@@ -28,6 +28,8 @@ private:
 	bool RecvPacket(SocketInfo* lpSocketInfo);
 	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
+	bool HandleWithoutBody(SocketInfo* lpSocketInfo, int& type);
+	bool HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* message, int& type);
 
 	//Temperary Method
 	void InitRoomList();

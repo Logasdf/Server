@@ -20,15 +20,15 @@ typedef unsigned (__stdcall *PTHREAD_START) (void *);
 #define PORT 9910
 #define IP "127.0.0.1"
 
-
 enum MessageType {
 	ACCEPT = 0, 
-	REJECT = 1,
-	REFRESH = 3,
-	CREATE = 4,
-	ENTER = 5
-};	
+	REJECT,
+	REFRESH,
+	CREATE,
+	ENTER,
 
-enum { TYPE_MESSAGE_BODY, TYPE_ROOMLIST, TYPE_ROOM }; // temporary type declaration
-
-enum { GET, POST };
+	DATA = 100,
+	ROOMLIST,
+	ROOM,
+	CLIENT
+};

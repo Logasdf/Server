@@ -11,6 +11,7 @@
 
 #include "ErrorHandle.h"
 #include "protobuf/room.pb.h"
+#include "data.pb.h"
 
 using namespace packet;
 using namespace google::protobuf;
@@ -23,9 +24,9 @@ public:
 	Packet();
 	~Packet();
 
-	void ClearBuffer(bool isOut = true);
+	void ClearBuffer();
 	int PackMessage(int type = -1, MessageLite* message = NULL);
-	void UnpackMessage(char& method, int& type, MessageLite*& message);
+	void UnpackMessage(int& type, int& length, MessageLite*& message);
 
 public:
 	static Packet* AllocatePacket();
@@ -46,4 +47,5 @@ private:
 
 private:
 	void Serialize(CodedOutputStream*&, MessageLite*&);
+	void Deserialize(int&, CodedInputStream*&, MessageLite*&);
 };

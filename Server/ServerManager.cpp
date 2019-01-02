@@ -386,49 +386,85 @@ bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTran
 
 // TCP는 데이터 경계가 없다는 거 기억하고, 그에 대한 처리 구현해야함... 
 // 일단은 중간에 잘리지 않고 받는다고 가정하고 구현하고 있음...
+// Event에 따라 분기처리
+// 1. Request RoomList(by refreshing the room list)
+// 2. Request Create Room (by creating a room)
+// 3. Request Enter Room (by clicking a room in the room list)
+// 4.
+// 그외. Echo
 bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
 {
 	lpSocketInfo->recvBuf->called = false;
-	// Event에 따라 분기처리
-	// 1. Request RoomList(by refreshing the room list)
-	// 2. Request Create Room (by creating a room)
-	// 3. Request Enter Room (by clicking a room in the room list)
-	// 4.
-	// 그외. Echo
+	if (dwBytesTransferred < 8)
+	{
 
-	char method = lpSocketInfo->recvBuf->lpPacket->buffer[0];
-	int type;
+		lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
+		if (!RecvPacket(lpSocketInfo))
+			return false;
+	}
+
+	int type, length;
 	MessageLite* pMessage;
-	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(method, type, pMessage);
-	if (method == GET)
-	{
-		if (type == REFRESH)
-		{
-			LOG("Request Refresh...");
-			lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
-			if (!SendPacket(lpSocketInfo))
-				return false;
-		}
-		else if (type == ENTER)
-		{
-			LOG("Request Etner...");
-		}
-	}
-	else if (method == POST)
-	{
-		if (type == TYPE_ROOM)
-		{
-			Room*& room = (Room*&)pMessage;
-			std::cout << room->name();
-			std::cout << room->limit();
-		}
-	}
+	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
+	
+	bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
+		: HandleWithBody(lpSocketInfo, pMessage, type);
+	if (!rtn)
+		return false;
 
-	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
 	if (!RecvPacket(lpSocketInfo))
 		return false;
 
 	return true;
+}
+
+bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
+{
+	if (type == MessageType::REFRESH)
+	{
+		lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+		if (!SendPacket(lpSocketInfo))
+			return false;
+	}
+
+	return true;
+}
+
+bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* message, int& type)
+{
+	if (type == MessageType::DATA)
+	{
+		auto dataMap = ((Data*)message)->datamap();
+		string contentType = dataMap["contentType"];
+		// content type마다 <key, value>가 다를 것이므로 분기처리해야함...(하드코딩 시발)
+		if (contentType == "CREATE_ROOM")
+		{
+			string roomName = dataMap["roomName"];
+			string limits = dataMap["limits"];
+
+			std::cout << "RoomName: " << roomName << ", " << "Limits: " << limits << std::endl;
+
+			// Test Response
+			Data* response = new Data();
+			response->mutable_datamap()->insert(MapPair<string, string>("contentType", "ACCEPT_CREATE_ROOM"));
+			response->mutable_datamap()->insert(MapPair<string, string>("roomId", "123"));
+			lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, response);
+			if (!SendPacket(lpSocketInfo))
+				return false;
+		}
+		delete message;
+		return true;
+	}
+	else
+	{
+		if (type == MessageType::ROOMLIST)
+		{
+
+		}
+		// ....
+
+		return true;
+	}
 }
 
 
