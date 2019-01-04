@@ -13,6 +13,18 @@ SocketInfo::~SocketInfo()
 {
 }
 
+void SocketInfo::GetIpAndPort(char pIpAddress[], int & port)
+{
+	SOCKADDR_IN addr;
+	int addrSize = sizeof(addr);
+	ZeroMemory(&addr, addrSize);
+	getpeername(socket, (SOCKADDR*)&addr, &addrSize);
+	//inet_ntop(AF_INET, &addr, pIpAddress, sizeof(pIpAddress));
+	port = ntohs(addr.sin_port);
+	CopyMemory(pIpAddress, inet_ntoa(addr.sin_addr), 20);
+	printf("%s:%d\n", inet_ntoa(addr.sin_addr), port);
+}
+
 SocketInfo* SocketInfo::AllocateSocketInfo(const SOCKET& socket)
 {
 	SocketInfo* lpSocketInfo = new SocketInfo();

@@ -1,12 +1,15 @@
 #pragma once
 
 #include <WinSock2.h>
+#include <WS2tcpip.h>
 #include "IOInfo.h"
 
 class SocketInfo {
 public:
 	SocketInfo();
 	~SocketInfo();
+
+	void GetIpAndPort(char pIpAddress[], int& port);
 	
 public:
 	static SocketInfo* AllocateSocketInfo(const SOCKET& socket);

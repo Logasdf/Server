@@ -2,6 +2,8 @@
 
 #include <WinSock2.h>
 #include <Windows.h>
+#include <unordered_map>
+#include <utility>
 #include "def.h"
 #include "SocketInfo.h"
 #include "protobuf/room.pb.h"
@@ -33,6 +35,7 @@ private:
 
 	//Temperary Method
 	void InitRoomList();
+	void InitRoom(Room* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits);
 
 private:
 	WSAData wsaData;
@@ -42,5 +45,7 @@ private:
 	int threadPoolSize;
 	HANDLE hMutexObj;
 
+	int roomIdStatus;
 	RoomList roomList;
+	std::unordered_map<string, int> roomTable;
 };

@@ -10,17 +10,58 @@
 
 void ServerManager::InitRoomList()
 {
-	for (int i = 0; i < 5; ++i)
-	{
-		packet::Room* pRoom = roomList.add_rooms();
-		pRoom->set_name("Room #" + std::to_string(i + 1));
-		pRoom->set_limit(10 - i);
-		pRoom->set_current(8 - i);
-	}
+	Room* newRoom = new Room();
+	newRoom->set_roomid(roomIdStatus);
+	newRoom->set_host(0);
+	newRoom->set_current(3);
+	newRoom->set_limit(8);
+	newRoom->set_name("Room #1");
+	newRoom->set_readycount(0);
+
+	Client* client = newRoom->add_redteam();
+	client->set_ip("192.168.0.123");
+	client->set_port(35467);
+	client->set_position(0);
+	client->set_ready(false);
+
+	client = newRoom->add_redteam();
+	client->set_ip("192.168.0.127");
+	client->set_port(35489);
+	client->set_position(1);
+	client->set_ready(false);
+
+	client = newRoom->add_blueteam();
+	client->set_ip("192.168.0.190");
+	client->set_port(30089);
+	client->set_position(8);
+	client->set_ready(false);
+
+	(*roomList.mutable_rooms())[roomIdStatus] = *newRoom;
+	roomTable.insert(std::make_pair("Room #1", roomIdStatus++));
+}
+
+void ServerManager::InitRoom(Room* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits)
+{
+	pRoom->set_host(0);
+	pRoom->set_current(1);
+	pRoom->set_limit(limits);
+	pRoom->set_name(roomName);
+	pRoom->set_readycount(0);
+	pRoom->set_roomid(roomIdStatus++);
+
+	char ip[20]; 
+	int port;
+	lpSocketInfo->GetIpAndPort(ip, port);
+	Client* client = pRoom->add_redteam();
+	client->set_ip(string(ip));
+	client->set_port(port);
+	client->set_position(0);
+	client->set_ready(false);
 }
 
 ServerManager::ServerManager() 
 { 
+	roomIdStatus = 100;
 	hCompPort = NULL; 
 	servSock = INVALID_SOCKET;
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
@@ -210,7 +251,7 @@ void ServerManager::AcceptClient()
 				__leave;
 			}
 
-			printf("Client (%s::%d) connected\n", inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
+			printf("Client %d (%s::%d) connected\n", clntSock, inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
 
 			int zero = 0;
 			if (setsockopt(clntSock, SOL_SOCKET, SO_RCVBUF, (const char*)&zero, sizeof(int)) == SOCKET_ERROR)
@@ -371,6 +412,7 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
+	printf("Send Completed %dbytes", dwBytesTransferred);
 	// Event에 따라 분기처리
 	// 1. 초기 Connection 이후 RoomList Send Completion -> nothing.
 	// 2. Response RoomList -> nothing
@@ -395,16 +437,16 @@ bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTran
 bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
 {
 	lpSocketInfo->recvBuf->called = false;
-	if (dwBytesTransferred < 8)
-	{
-
-		lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-		if (!RecvPacket(lpSocketInfo))
-			return false;
-	}
+	//if (dwBytesTransferred < 8)
+	//{
+	//	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
+	//	if (!RecvPacket(lpSocketInfo))
+	//		return false;
+	//}
 
 	int type, length;
 	MessageLite* pMessage;
+	// type, length만 역직렬화하는 함수도 만들어야겠다.
 	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
 	
 	bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
@@ -422,7 +464,8 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 {
 	if (type == MessageType::REFRESH)
 	{
-		lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+		lpSocketInfo->sendBuf->wsaBuf.len
+			= lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
 		if (!SendPacket(lpSocketInfo))
 			return false;
 	}
@@ -436,22 +479,74 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 	{
 		auto dataMap = ((Data*)message)->datamap();
 		string contentType = dataMap["contentType"];
-		// content type마다 <key, value>가 다를 것이므로 분기처리해야함...(하드코딩 시발)
+		// content type마다 <key, value>가 다를 것이므로 분기처리해야함
 		if (contentType == "CREATE_ROOM")
 		{
 			string roomName = dataMap["roomName"];
-			string limits = dataMap["limits"];
+			int limits = stoi(dataMap["limits"]);
 
 			std::cout << "RoomName: " << roomName << ", " << "Limits: " << limits << std::endl;
 
-			// Test Response
-			Data* response = new Data();
-			response->mutable_datamap()->insert(MapPair<string, string>("contentType", "ACCEPT_CREATE_ROOM"));
-			response->mutable_datamap()->insert(MapPair<string, string>("roomId", "123"));
-			lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, response);
+			if (roomTable.find(roomName) != roomTable.end()) {
+				// Room Name duplicated!!
+				Data response;
+				(*response.mutable_datamap())["contentType"] = "REJECT_CREATE_ROOM";
+				(*response.mutable_datamap())["errorCode"] = "400";
+				(*response.mutable_datamap())["errorMessage"] = "Duplicated Room Name";
+				lpSocketInfo->sendBuf->wsaBuf.len =
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+			}
+			else 
+			{
+				Room* newRoom = new Room();
+				InitRoom(newRoom, lpSocketInfo, roomName, limits);
+				(*roomList.mutable_rooms())[newRoom->roomid()] = *newRoom;
+				roomTable.insert(std::make_pair(roomName, newRoom->roomid()));
+				lpSocketInfo->sendBuf->wsaBuf.len = 
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, newRoom);
+			}
 			if (!SendPacket(lpSocketInfo))
 				return false;
 		}
+		else if(contentType == "ENTER_ROOM")
+		{
+			string roomName = dataMap["roomName"];
+			int roomIdToEnter = roomTable[roomName];
+			if (roomList.rooms().find(roomIdToEnter) == roomList.rooms().end()) {
+				Data response;
+				(*response.mutable_datamap())["contentType"] = "REJECT_ENTER_ROOM";
+				(*response.mutable_datamap())["errorCode"] = "401";
+				(*response.mutable_datamap())["errorMessage"] = "Room already has been destroyed!";
+				lpSocketInfo->sendBuf->wsaBuf.len =
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+			}
+			else {
+				int port;
+				char ip[20];
+			
+				Room& room = (*roomList.mutable_rooms())[roomIdToEnter];
+				lpSocketInfo->GetIpAndPort(ip, port);
+				//Setting Client State
+				Client* clnt;
+				if (room.current() % 2) {
+					clnt = room.add_blueteam();
+					clnt->set_position(room.blueteam_size() + 7);
+				}
+				else {
+					clnt = room.add_redteam();
+					clnt->set_position(room.redteam_size() - 1);
+				}
+				clnt->set_ip(ip);
+				clnt->set_port(port);
+				clnt->set_ready(false);
+				room.set_current(room.current() + 1);
+				lpSocketInfo->sendBuf->wsaBuf.len =
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &room);
+			}
+			if (!SendPacket(lpSocketInfo))
+				return false;
+		}
+
 		delete message;
 		return true;
 	}
