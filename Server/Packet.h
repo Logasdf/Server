@@ -2,6 +2,7 @@
 
 #include <google/protobuf/util/time_util.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <google/protobuf/message_lite.h>
 #include <unordered_map>
 #include <typeindex>
 #include <typeinfo>
@@ -10,21 +11,22 @@
 
 #include "ErrorHandle.h"
 #include "protobuf/room.pb.h"
+#include "data.pb.h"
 
 using namespace packet;
+using namespace google::protobuf;
 using namespace google::protobuf::io;
 
 #define MAX_SIZE 4096 // protocol buffer encode/decode maximum size at once time
-
-enum {TYPE_ROOMLIST, }; // temporary type declaration
 
 class Packet {
 public:
 	Packet();
 	~Packet();
 
-	void ClearBuffer(bool isOut = true);
-	template<typename T> int Serialize(T& message);
+	void ClearBuffer();
+	int PackMessage(int type = -1, MessageLite* message = NULL);
+	void UnpackMessage(int& type, int& length, MessageLite*& message);
 
 public:
 	static Packet* AllocatePacket();
@@ -42,28 +44,8 @@ private:
 private:
 	typedef std::unordered_map<std::type_index, int> TypeMap;
 	static TypeMap typeMap;
+
+private:
+	void Serialize(CodedOutputStream*&, MessageLite*&);
+	void Deserialize(int&, CodedInputStream*&, MessageLite*&);
 };
-
-template<typename T>
-inline int Packet::Serialize(T& message)
-{
-	ClearBuffer();
-	int type = typeMap[typeid(T)];
-	int contentLength = message.ByteSize();
-	//cos->WriteVarint32(type);
-	//cos->WriteVarint32(contentLength);
-	cos->WriteLittleEndian32(type);
-	cos->WriteLittleEndian32(contentLength);
-	message.SerializeToCodedStream(cos);
-
-	return cos->ByteCount();
-	//return MAX_SIZE;
-
-	//if (type == TYPE_ROOMLIST) {
-	//	RoomList& ref = dynamic_cast<RoomList&>(message);
-	//	int contentLength = ref.ByteSize();
-	//	cos->WriteLittleEndian32(type);
-	//	cos->WriteLittleEndian32(contentLength);
-	//	ref.SerializeToCodedStream(cos);
-	//}
-}

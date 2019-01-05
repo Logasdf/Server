@@ -1,5 +1,4 @@
-#ifndef __IO_INFO_H__
-#define __IO_INFO_H__
+#pragma once
 
 #include "Packet.h"
 #include <WinSock2.h>
@@ -10,6 +9,9 @@ public:
 	IOInfo();
 	~IOInfo();
 
+	//void ClearBackupBuffer();
+	//void BackupReceivedData(int& length);
+
 public:
 	static IOInfo* AllocateIoInfo();
 	static void DeallocateIoInfo(IOInfo* lpIoInfo);
@@ -18,6 +20,9 @@ public:
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
 	Packet* lpPacket;
-};
+	bool called;
 
-#endif
+	int backupSize; // backup buffer size at current time;
+	char backup[MAX_SIZE];
+
+};

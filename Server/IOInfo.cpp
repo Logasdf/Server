@@ -6,9 +6,15 @@ IOInfo::IOInfo()
 	memset(&(overlapped), 0, sizeof(WSAOVERLAPPED));
 	wsaBuf.len = 0;
 	wsaBuf.buf = NULL;
+	called = false;
 }
 
 IOInfo::~IOInfo() {}
+//
+//void IOInfo::BackupReceivedData(int & length)
+//{
+//	
+//}
 
 IOInfo* IOInfo::AllocateIoInfo()
 {
