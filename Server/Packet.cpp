@@ -4,7 +4,7 @@
 Packet::TypeMap Packet::typeMap = {
 	{typeid(Data), MessageType::DATA},
 	{typeid(RoomList), MessageType::ROOMLIST},
-	{typeid(Room), MessageType::ROOM},
+	{typeid(RoomInfo), MessageType::ROOM},
 	{typeid(Client), MessageType::CLIENT}
 };
 

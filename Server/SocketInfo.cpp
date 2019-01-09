@@ -15,6 +15,7 @@ SocketInfo::~SocketInfo()
 
 void SocketInfo::GetIpAndPort(char pIpAddress[], int & port)
 {
+	/* 필요가 없어진듯?
 	SOCKADDR_IN addr;
 	int addrSize = sizeof(addr);
 	ZeroMemory(&addr, addrSize);
@@ -23,6 +24,7 @@ void SocketInfo::GetIpAndPort(char pIpAddress[], int & port)
 	port = ntohs(addr.sin_port);
 	CopyMemory(pIpAddress, inet_ntoa(addr.sin_addr), 20);
 	printf("%s:%d\n", inet_ntoa(addr.sin_addr), port);
+	*/
 }
 
 SocketInfo* SocketInfo::AllocateSocketInfo(const SOCKET& socket)
