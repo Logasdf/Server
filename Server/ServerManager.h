@@ -1,4 +1,5 @@
 #pragma once
+#pragma comment(lib, "ws2_32.lib")
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -7,6 +8,7 @@
 #include "def.h"
 #include "SocketInfo.h"
 #include "protobuf/room.pb.h"
+#include "Room.h"
 
 class ServerManager {
 public:
@@ -34,8 +36,9 @@ private:
 	bool HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* message, int& type);
 
 	//Temperary Method
-	void InitRoomList();
-	void InitRoom(Room* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits);
+	void InitRoom(RoomInfo* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName);
+	void SendInitData(SocketInfo*);
+	void BroadcastMessage(Room* room, MessageLite* message);
 
 private:
 	WSAData wsaData;
@@ -47,5 +50,6 @@ private:
 
 	int roomIdStatus;
 	RoomList roomList;
+	std::unordered_map<int, Room*> serverRoomList;
 	std::unordered_map<string, int> roomTable;
 };

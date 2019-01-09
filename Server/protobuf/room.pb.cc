@@ -21,7 +21,7 @@
 
 namespace protobuf_room_2eproto {
 extern PROTOBUF_INTERNAL_EXPORT_protobuf_room_2eproto ::google::protobuf::internal::SCCInfo<0> scc_info_Client;
-extern PROTOBUF_INTERNAL_EXPORT_protobuf_room_2eproto ::google::protobuf::internal::SCCInfo<1> scc_info_Room;
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_room_2eproto ::google::protobuf::internal::SCCInfo<1> scc_info_RoomInfo;
 extern PROTOBUF_INTERNAL_EXPORT_protobuf_room_2eproto ::google::protobuf::internal::SCCInfo<1> scc_info_RoomList_RoomsEntry_DoNotUse;
 }  // namespace protobuf_room_2eproto
 namespace packet {
@@ -30,11 +30,11 @@ class ClientDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<Client>
       _instance;
 } _Client_default_instance_;
-class RoomDefaultTypeInternal {
+class RoomInfoDefaultTypeInternal {
  public:
-  ::google::protobuf::internal::ExplicitlyConstructed<Room>
+  ::google::protobuf::internal::ExplicitlyConstructed<RoomInfo>
       _instance;
-} _Room_default_instance_;
+} _RoomInfo_default_instance_;
 class RoomList_RoomsEntry_DoNotUseDefaultTypeInternal {
  public:
   ::google::protobuf::internal::ExplicitlyConstructed<RoomList_RoomsEntry_DoNotUse>
@@ -61,19 +61,19 @@ static void InitDefaultsClient() {
 ::google::protobuf::internal::SCCInfo<0> scc_info_Client =
     {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsClient}, {}};
 
-static void InitDefaultsRoom() {
+static void InitDefaultsRoomInfo() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   {
-    void* ptr = &::packet::_Room_default_instance_;
-    new (ptr) ::packet::Room();
+    void* ptr = &::packet::_RoomInfo_default_instance_;
+    new (ptr) ::packet::RoomInfo();
     ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::packet::Room::InitAsDefaultInstance();
+  ::packet::RoomInfo::InitAsDefaultInstance();
 }
 
-::google::protobuf::internal::SCCInfo<1> scc_info_Room =
-    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsRoom}, {
+::google::protobuf::internal::SCCInfo<1> scc_info_RoomInfo =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsRoomInfo}, {
       &protobuf_room_2eproto::scc_info_Client.base,}};
 
 static void InitDefaultsRoomList_RoomsEntry_DoNotUse() {
@@ -88,7 +88,7 @@ static void InitDefaultsRoomList_RoomsEntry_DoNotUse() {
 
 ::google::protobuf::internal::SCCInfo<1> scc_info_RoomList_RoomsEntry_DoNotUse =
     {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsRoomList_RoomsEntry_DoNotUse}, {
-      &protobuf_room_2eproto::scc_info_Room.base,}};
+      &protobuf_room_2eproto::scc_info_RoomInfo.base,}};
 
 static void InitDefaultsRoomList() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -107,7 +107,7 @@ static void InitDefaultsRoomList() {
 
 void InitDefaults() {
   ::google::protobuf::internal::InitSCC(&scc_info_Client.base);
-  ::google::protobuf::internal::InitSCC(&scc_info_Room.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_RoomInfo.base);
   ::google::protobuf::internal::InitSCC(&scc_info_RoomList_RoomsEntry_DoNotUse.base);
   ::google::protobuf::internal::InitSCC(&scc_info_RoomList.base);
 }
@@ -121,24 +121,22 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, clntid_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, ip_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, port_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, name_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, position_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Client, ready_),
   ~0u,  // no _has_bits_
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, _internal_metadata_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, roomid_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, name_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, limit_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, current_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, redteam_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, blueteam_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, readycount_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, host_),
-  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::Room, myposition_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, roomid_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, name_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, limit_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, current_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, redteam_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, blueteam_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, readycount_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomInfo, host_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomList_RoomsEntry_DoNotUse, _has_bits_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::packet::RoomList_RoomsEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -157,14 +155,14 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::packet::Client)},
-  { 10, -1, sizeof(::packet::Room)},
-  { 24, 31, sizeof(::packet::RoomList_RoomsEntry_DoNotUse)},
-  { 33, -1, sizeof(::packet::RoomList)},
+  { 9, -1, sizeof(::packet::RoomInfo)},
+  { 22, 29, sizeof(::packet::RoomList_RoomsEntry_DoNotUse)},
+  { 31, -1, sizeof(::packet::RoomList)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::packet::_Client_default_instance_),
-  reinterpret_cast<const ::google::protobuf::Message*>(&::packet::_Room_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::packet::_RoomInfo_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::packet::_RoomList_RoomsEntry_DoNotUse_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::packet::_RoomList_default_instance_),
 };
@@ -190,21 +188,20 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\nroom.proto\022\006packet\"S\n\006Client\022\016\n\006clntId"
-      "\030\001 \001(\005\022\n\n\002ip\030\002 \001(\t\022\014\n\004port\030\003 \001(\005\022\020\n\010posi"
-      "tion\030\004 \001(\005\022\r\n\005ready\030\005 \001(\010\"\275\001\n\004Room\022\016\n\006ro"
-      "omId\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022\r\n\005limit\030\003 \001(\005\022"
-      "\017\n\007current\030\004 \001(\005\022\037\n\007redTeam\030\005 \003(\0132\016.pack"
-      "et.Client\022 \n\010blueTeam\030\006 \003(\0132\016.packet.Cli"
-      "ent\022\022\n\nreadyCount\030\007 \001(\005\022\014\n\004host\030\010 \001(\005\022\022\n"
-      "\nmyPosition\030\t \001(\005\"r\n\010RoomList\022*\n\005rooms\030\001"
-      " \003(\0132\033.packet.RoomList.RoomsEntry\032:\n\nRoo"
-      "msEntry\022\013\n\003key\030\001 \001(\005\022\033\n\005value\030\002 \001(\0132\014.pa"
-      "cket.Room:\0028\001B\036\252\002\033Google.Protobuf.Packet"
-      ".Roomb\006proto3"
+      "\n\nroom.proto\022\006packet\"G\n\006Client\022\016\n\006clntId"
+      "\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022\020\n\010position\030\003 \001(\005\022\r"
+      "\n\005ready\030\004 \001(\010\"\255\001\n\010RoomInfo\022\016\n\006roomId\030\001 \001"
+      "(\005\022\014\n\004name\030\002 \001(\t\022\r\n\005limit\030\003 \001(\005\022\017\n\007curre"
+      "nt\030\004 \001(\005\022\037\n\007redTeam\030\005 \003(\0132\016.packet.Clien"
+      "t\022 \n\010blueTeam\030\006 \003(\0132\016.packet.Client\022\022\n\nr"
+      "eadyCount\030\007 \001(\005\022\014\n\004host\030\010 \001(\005\"v\n\010RoomLis"
+      "t\022*\n\005rooms\030\001 \003(\0132\033.packet.RoomList.Rooms"
+      "Entry\032>\n\nRoomsEntry\022\013\n\003key\030\001 \001(\005\022\037\n\005valu"
+      "e\030\002 \001(\0132\020.packet.RoomInfo:\0028\001B\036\252\002\033Google"
+      ".Protobuf.Packet.Roomb\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 453);
+      descriptor, 429);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "room.proto", &protobuf_RegisterTypes);
 }
@@ -228,8 +225,7 @@ void Client::InitAsDefaultInstance() {
 }
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Client::kClntIdFieldNumber;
-const int Client::kIpFieldNumber;
-const int Client::kPortFieldNumber;
+const int Client::kNameFieldNumber;
 const int Client::kPositionFieldNumber;
 const int Client::kReadyFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
@@ -245,9 +241,9 @@ Client::Client(const Client& from)
   : ::google::protobuf::Message(),
       _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  ip_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  if (from.ip().size() > 0) {
-    ip_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.ip_);
+  name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.name().size() > 0) {
+    name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
   }
   ::memcpy(&clntid_, &from.clntid_,
     static_cast<size_t>(reinterpret_cast<char*>(&ready_) -
@@ -256,7 +252,7 @@ Client::Client(const Client& from)
 }
 
 void Client::SharedCtor() {
-  ip_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&clntid_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&ready_) -
       reinterpret_cast<char*>(&clntid_)) + sizeof(ready_));
@@ -268,7 +264,7 @@ Client::~Client() {
 }
 
 void Client::SharedDtor() {
-  ip_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void Client::SetCachedSize(int size) const {
@@ -291,7 +287,7 @@ void Client::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ip_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&clntid_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&ready_) -
       reinterpret_cast<char*>(&clntid_)) + sizeof(ready_));
@@ -322,40 +318,26 @@ bool Client::MergePartialFromCodedStream(
         break;
       }
 
-      // string ip = 2;
+      // string name = 2;
       case 2: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_ip()));
+                input, this->mutable_name()));
           DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-            this->ip().data(), static_cast<int>(this->ip().length()),
+            this->name().data(), static_cast<int>(this->name().length()),
             ::google::protobuf::internal::WireFormatLite::PARSE,
-            "packet.Client.ip"));
+            "packet.Client.name"));
         } else {
           goto handle_unusual;
         }
         break;
       }
 
-      // int32 port = 3;
+      // int32 position = 3;
       case 3: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(24u /* 24 & 0xFF */)) {
-
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &port_)));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
-      // int32 position = 4;
-      case 4: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
 
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
@@ -366,10 +348,10 @@ bool Client::MergePartialFromCodedStream(
         break;
       }
 
-      // bool ready = 5;
-      case 5: {
+      // bool ready = 4;
+      case 4: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(40u /* 40 & 0xFF */)) {
+            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
 
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
@@ -411,29 +393,24 @@ void Client::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->clntid(), output);
   }
 
-  // string ip = 2;
-  if (this->ip().size() > 0) {
+  // string name = 2;
+  if (this->name().size() > 0) {
     ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->ip().data(), static_cast<int>(this->ip().length()),
+      this->name().data(), static_cast<int>(this->name().length()),
       ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "packet.Client.ip");
+      "packet.Client.name");
     ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      2, this->ip(), output);
+      2, this->name(), output);
   }
 
-  // int32 port = 3;
-  if (this->port() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->port(), output);
-  }
-
-  // int32 position = 4;
+  // int32 position = 3;
   if (this->position() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->position(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->position(), output);
   }
 
-  // bool ready = 5;
+  // bool ready = 4;
   if (this->ready() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteBool(5, this->ready(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteBool(4, this->ready(), output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -455,30 +432,25 @@ void Client::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->clntid(), target);
   }
 
-  // string ip = 2;
-  if (this->ip().size() > 0) {
+  // string name = 2;
+  if (this->name().size() > 0) {
     ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->ip().data(), static_cast<int>(this->ip().length()),
+      this->name().data(), static_cast<int>(this->name().length()),
       ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "packet.Client.ip");
+      "packet.Client.name");
     target =
       ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        2, this->ip(), target);
+        2, this->name(), target);
   }
 
-  // int32 port = 3;
-  if (this->port() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->port(), target);
-  }
-
-  // int32 position = 4;
+  // int32 position = 3;
   if (this->position() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->position(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->position(), target);
   }
 
-  // bool ready = 5;
+  // bool ready = 4;
   if (this->ready() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(5, this->ready(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(4, this->ready(), target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -498,11 +470,11 @@ size_t Client::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
   }
-  // string ip = 2;
-  if (this->ip().size() > 0) {
+  // string name = 2;
+  if (this->name().size() > 0) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
-        this->ip());
+        this->name());
   }
 
   // int32 clntId = 1;
@@ -512,21 +484,14 @@ size_t Client::ByteSizeLong() const {
         this->clntid());
   }
 
-  // int32 port = 3;
-  if (this->port() != 0) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::Int32Size(
-        this->port());
-  }
-
-  // int32 position = 4;
+  // int32 position = 3;
   if (this->position() != 0) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::Int32Size(
         this->position());
   }
 
-  // bool ready = 5;
+  // bool ready = 4;
   if (this->ready() != 0) {
     total_size += 1 + 1;
   }
@@ -558,15 +523,12 @@ void Client::MergeFrom(const Client& from) {
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.ip().size() > 0) {
+  if (from.name().size() > 0) {
 
-    ip_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.ip_);
+    name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
   }
   if (from.clntid() != 0) {
     set_clntid(from.clntid());
-  }
-  if (from.port() != 0) {
-    set_port(from.port());
   }
   if (from.position() != 0) {
     set_position(from.position());
@@ -600,10 +562,9 @@ void Client::Swap(Client* other) {
 }
 void Client::InternalSwap(Client* other) {
   using std::swap;
-  ip_.Swap(&other->ip_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+  name_.Swap(&other->name_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
   swap(clntid_, other->clntid_);
-  swap(port_, other->port_);
   swap(position_, other->position_);
   swap(ready_, other->ready_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
@@ -617,28 +578,27 @@ void Client::InternalSwap(Client* other) {
 
 // ===================================================================
 
-void Room::InitAsDefaultInstance() {
+void RoomInfo::InitAsDefaultInstance() {
 }
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
-const int Room::kRoomIdFieldNumber;
-const int Room::kNameFieldNumber;
-const int Room::kLimitFieldNumber;
-const int Room::kCurrentFieldNumber;
-const int Room::kRedTeamFieldNumber;
-const int Room::kBlueTeamFieldNumber;
-const int Room::kReadyCountFieldNumber;
-const int Room::kHostFieldNumber;
-const int Room::kMyPositionFieldNumber;
+const int RoomInfo::kRoomIdFieldNumber;
+const int RoomInfo::kNameFieldNumber;
+const int RoomInfo::kLimitFieldNumber;
+const int RoomInfo::kCurrentFieldNumber;
+const int RoomInfo::kRedTeamFieldNumber;
+const int RoomInfo::kBlueTeamFieldNumber;
+const int RoomInfo::kReadyCountFieldNumber;
+const int RoomInfo::kHostFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
-Room::Room()
+RoomInfo::RoomInfo()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
   ::google::protobuf::internal::InitSCC(
-      &protobuf_room_2eproto::scc_info_Room.base);
+      &protobuf_room_2eproto::scc_info_RoomInfo.base);
   SharedCtor();
-  // @@protoc_insertion_point(constructor:packet.Room)
+  // @@protoc_insertion_point(constructor:packet.RoomInfo)
 }
-Room::Room(const Room& from)
+RoomInfo::RoomInfo(const RoomInfo& from)
   : ::google::protobuf::Message(),
       _internal_metadata_(NULL),
       redteam_(from.redteam_),
@@ -649,43 +609,43 @@ Room::Room(const Room& from)
     name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
   }
   ::memcpy(&roomid_, &from.roomid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&myposition_) -
-    reinterpret_cast<char*>(&roomid_)) + sizeof(myposition_));
-  // @@protoc_insertion_point(copy_constructor:packet.Room)
+    static_cast<size_t>(reinterpret_cast<char*>(&host_) -
+    reinterpret_cast<char*>(&roomid_)) + sizeof(host_));
+  // @@protoc_insertion_point(copy_constructor:packet.RoomInfo)
 }
 
-void Room::SharedCtor() {
+void RoomInfo::SharedCtor() {
   name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&roomid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&myposition_) -
-      reinterpret_cast<char*>(&roomid_)) + sizeof(myposition_));
+      reinterpret_cast<char*>(&host_) -
+      reinterpret_cast<char*>(&roomid_)) + sizeof(host_));
 }
 
-Room::~Room() {
-  // @@protoc_insertion_point(destructor:packet.Room)
+RoomInfo::~RoomInfo() {
+  // @@protoc_insertion_point(destructor:packet.RoomInfo)
   SharedDtor();
 }
 
-void Room::SharedDtor() {
+void RoomInfo::SharedDtor() {
   name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
-void Room::SetCachedSize(int size) const {
+void RoomInfo::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const ::google::protobuf::Descriptor* Room::descriptor() {
+const ::google::protobuf::Descriptor* RoomInfo::descriptor() {
   ::protobuf_room_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_room_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
 }
 
-const Room& Room::default_instance() {
-  ::google::protobuf::internal::InitSCC(&protobuf_room_2eproto::scc_info_Room.base);
+const RoomInfo& RoomInfo::default_instance() {
+  ::google::protobuf::internal::InitSCC(&protobuf_room_2eproto::scc_info_RoomInfo.base);
   return *internal_default_instance();
 }
 
 
-void Room::Clear() {
-// @@protoc_insertion_point(message_clear_start:packet.Room)
+void RoomInfo::Clear() {
+// @@protoc_insertion_point(message_clear_start:packet.RoomInfo)
   ::google::protobuf::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -694,16 +654,16 @@ void Room::Clear() {
   blueteam_.Clear();
   name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&roomid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&myposition_) -
-      reinterpret_cast<char*>(&roomid_)) + sizeof(myposition_));
+      reinterpret_cast<char*>(&host_) -
+      reinterpret_cast<char*>(&roomid_)) + sizeof(host_));
   _internal_metadata_.Clear();
 }
 
-bool Room::MergePartialFromCodedStream(
+bool RoomInfo::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:packet.Room)
+  // @@protoc_insertion_point(parse_start:packet.RoomInfo)
   for (;;) {
     ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
@@ -732,7 +692,7 @@ bool Room::MergePartialFromCodedStream(
           DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
             this->name().data(), static_cast<int>(this->name().length()),
             ::google::protobuf::internal::WireFormatLite::PARSE,
-            "packet.Room.name"));
+            "packet.RoomInfo.name"));
         } else {
           goto handle_unusual;
         }
@@ -819,20 +779,6 @@ bool Room::MergePartialFromCodedStream(
         break;
       }
 
-      // int32 myPosition = 9;
-      case 9: {
-        if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(72u /* 72 & 0xFF */)) {
-
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &myposition_)));
-        } else {
-          goto handle_unusual;
-        }
-        break;
-      }
-
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -845,17 +791,17 @@ bool Room::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:packet.Room)
+  // @@protoc_insertion_point(parse_success:packet.RoomInfo)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:packet.Room)
+  // @@protoc_insertion_point(parse_failure:packet.RoomInfo)
   return false;
 #undef DO_
 }
 
-void Room::SerializeWithCachedSizes(
+void RoomInfo::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:packet.Room)
+  // @@protoc_insertion_point(serialize_start:packet.RoomInfo)
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -869,7 +815,7 @@ void Room::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
       this->name().data(), static_cast<int>(this->name().length()),
       ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "packet.Room.name");
+      "packet.RoomInfo.name");
     ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
       2, this->name(), output);
   }
@@ -912,22 +858,17 @@ void Room::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(8, this->host(), output);
   }
 
-  // int32 myPosition = 9;
-  if (this->myposition() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(9, this->myposition(), output);
-  }
-
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
   }
-  // @@protoc_insertion_point(serialize_end:packet.Room)
+  // @@protoc_insertion_point(serialize_end:packet.RoomInfo)
 }
 
-::google::protobuf::uint8* Room::InternalSerializeWithCachedSizesToArray(
+::google::protobuf::uint8* RoomInfo::InternalSerializeWithCachedSizesToArray(
     bool deterministic, ::google::protobuf::uint8* target) const {
   (void)deterministic; // Unused
-  // @@protoc_insertion_point(serialize_to_array_start:packet.Room)
+  // @@protoc_insertion_point(serialize_to_array_start:packet.RoomInfo)
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -941,7 +882,7 @@ void Room::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
       this->name().data(), static_cast<int>(this->name().length()),
       ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "packet.Room.name");
+      "packet.RoomInfo.name");
     target =
       ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
         2, this->name(), target);
@@ -983,21 +924,16 @@ void Room::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(8, this->host(), target);
   }
 
-  // int32 myPosition = 9;
-  if (this->myposition() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(9, this->myposition(), target);
-  }
-
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:packet.Room)
+  // @@protoc_insertion_point(serialize_to_array_end:packet.RoomInfo)
   return target;
 }
 
-size_t Room::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:packet.Room)
+size_t RoomInfo::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:packet.RoomInfo)
   size_t total_size = 0;
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -1069,35 +1005,28 @@ size_t Room::ByteSizeLong() const {
         this->host());
   }
 
-  // int32 myPosition = 9;
-  if (this->myposition() != 0) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::Int32Size(
-        this->myposition());
-  }
-
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   SetCachedSize(cached_size);
   return total_size;
 }
 
-void Room::MergeFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:packet.Room)
+void RoomInfo::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:packet.RoomInfo)
   GOOGLE_DCHECK_NE(&from, this);
-  const Room* source =
-      ::google::protobuf::internal::DynamicCastToGenerated<const Room>(
+  const RoomInfo* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const RoomInfo>(
           &from);
   if (source == NULL) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:packet.Room)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:packet.RoomInfo)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:packet.Room)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:packet.RoomInfo)
     MergeFrom(*source);
   }
 }
 
-void Room::MergeFrom(const Room& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:packet.Room)
+void RoomInfo::MergeFrom(const RoomInfo& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:packet.RoomInfo)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   ::google::protobuf::uint32 cached_has_bits = 0;
@@ -1124,34 +1053,31 @@ void Room::MergeFrom(const Room& from) {
   if (from.host() != 0) {
     set_host(from.host());
   }
-  if (from.myposition() != 0) {
-    set_myposition(from.myposition());
-  }
 }
 
-void Room::CopyFrom(const ::google::protobuf::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:packet.Room)
+void RoomInfo::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:packet.RoomInfo)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void Room::CopyFrom(const Room& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:packet.Room)
+void RoomInfo::CopyFrom(const RoomInfo& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:packet.RoomInfo)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool Room::IsInitialized() const {
+bool RoomInfo::IsInitialized() const {
   return true;
 }
 
-void Room::Swap(Room* other) {
+void RoomInfo::Swap(RoomInfo* other) {
   if (other == this) return;
   InternalSwap(other);
 }
-void Room::InternalSwap(Room* other) {
+void RoomInfo::InternalSwap(RoomInfo* other) {
   using std::swap;
   CastToBase(&redteam_)->InternalSwap(CastToBase(&other->redteam_));
   CastToBase(&blueteam_)->InternalSwap(CastToBase(&other->blueteam_));
@@ -1162,11 +1088,10 @@ void Room::InternalSwap(Room* other) {
   swap(current_, other->current_);
   swap(readycount_, other->readycount_);
   swap(host_, other->host_);
-  swap(myposition_, other->myposition_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
 }
 
-::google::protobuf::Metadata Room::GetMetadata() const {
+::google::protobuf::Metadata RoomInfo::GetMetadata() const {
   protobuf_room_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_room_2eproto::file_level_metadata[kIndexInFileMessages];
 }
@@ -1257,17 +1182,17 @@ bool RoomList::MergePartialFromCodedStream(
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // map<int32, .packet.Room> rooms = 1;
+      // map<int32, .packet.RoomInfo> rooms = 1;
       case 1: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
           RoomList_RoomsEntry_DoNotUse::Parser< ::google::protobuf::internal::MapField<
               RoomList_RoomsEntry_DoNotUse,
-              ::google::protobuf::int32, ::packet::Room,
+              ::google::protobuf::int32, ::packet::RoomInfo,
               ::google::protobuf::internal::WireFormatLite::TYPE_INT32,
               ::google::protobuf::internal::WireFormatLite::TYPE_MESSAGE,
               0 >,
-            ::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room > > parser(&rooms_);
+            ::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo > > parser(&rooms_);
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
               input, &parser));
         } else {
@@ -1302,9 +1227,9 @@ void RoomList::SerializeWithCachedSizes(
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // map<int32, .packet.Room> rooms = 1;
+  // map<int32, .packet.RoomInfo> rooms = 1;
   if (!this->rooms().empty()) {
-    typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_pointer
+    typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_pointer
         ConstPtr;
     typedef ::google::protobuf::internal::SortItem< ::google::protobuf::int32, ConstPtr > SortItem;
     typedef ::google::protobuf::internal::CompareByFirstField<SortItem> Less;
@@ -1313,9 +1238,9 @@ void RoomList::SerializeWithCachedSizes(
         this->rooms().size() > 1) {
       ::std::unique_ptr<SortItem[]> items(
           new SortItem[this->rooms().size()]);
-      typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::size_type size_type;
+      typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::size_type size_type;
       size_type n = 0;
-      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_iterator
+      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_iterator
           it = this->rooms().begin();
           it != this->rooms().end(); ++it, ++n) {
         items[static_cast<ptrdiff_t>(n)] = SortItem(&*it);
@@ -1330,7 +1255,7 @@ void RoomList::SerializeWithCachedSizes(
       }
     } else {
       ::std::unique_ptr<RoomList_RoomsEntry_DoNotUse> entry;
-      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_iterator
+      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_iterator
           it = this->rooms().begin();
           it != this->rooms().end(); ++it) {
         entry.reset(rooms_.NewEntryWrapper(
@@ -1355,9 +1280,9 @@ void RoomList::SerializeWithCachedSizes(
   ::google::protobuf::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // map<int32, .packet.Room> rooms = 1;
+  // map<int32, .packet.RoomInfo> rooms = 1;
   if (!this->rooms().empty()) {
-    typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_pointer
+    typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_pointer
         ConstPtr;
     typedef ::google::protobuf::internal::SortItem< ::google::protobuf::int32, ConstPtr > SortItem;
     typedef ::google::protobuf::internal::CompareByFirstField<SortItem> Less;
@@ -1366,9 +1291,9 @@ void RoomList::SerializeWithCachedSizes(
         this->rooms().size() > 1) {
       ::std::unique_ptr<SortItem[]> items(
           new SortItem[this->rooms().size()]);
-      typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::size_type size_type;
+      typedef ::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::size_type size_type;
       size_type n = 0;
-      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_iterator
+      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_iterator
           it = this->rooms().begin();
           it != this->rooms().end(); ++it, ++n) {
         items[static_cast<ptrdiff_t>(n)] = SortItem(&*it);
@@ -1385,7 +1310,7 @@ void RoomList::SerializeWithCachedSizes(
       }
     } else {
       ::std::unique_ptr<RoomList_RoomsEntry_DoNotUse> entry;
-      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_iterator
+      for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_iterator
           it = this->rooms().begin();
           it != this->rooms().end(); ++it) {
         entry.reset(rooms_.NewEntryWrapper(
@@ -1415,12 +1340,12 @@ size_t RoomList::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
   }
-  // map<int32, .packet.Room> rooms = 1;
+  // map<int32, .packet.RoomInfo> rooms = 1;
   total_size += 1 *
       ::google::protobuf::internal::FromIntSize(this->rooms_size());
   {
     ::std::unique_ptr<RoomList_RoomsEntry_DoNotUse> entry;
-    for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::Room >::const_iterator
+    for (::google::protobuf::Map< ::google::protobuf::int32, ::packet::RoomInfo >::const_iterator
         it = this->rooms().begin();
         it != this->rooms().end(); ++it) {
       entry.reset(rooms_.NewEntryWrapper(it->first, it->second));
@@ -1500,8 +1425,8 @@ namespace protobuf {
 template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::packet::Client* Arena::CreateMaybeMessage< ::packet::Client >(Arena* arena) {
   return Arena::CreateInternal< ::packet::Client >(arena);
 }
-template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::packet::Room* Arena::CreateMaybeMessage< ::packet::Room >(Arena* arena) {
-  return Arena::CreateInternal< ::packet::Room >(arena);
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::packet::RoomInfo* Arena::CreateMaybeMessage< ::packet::RoomInfo >(Arena* arena) {
+  return Arena::CreateInternal< ::packet::RoomInfo >(arena);
 }
 template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::packet::RoomList_RoomsEntry_DoNotUse* Arena::CreateMaybeMessage< ::packet::RoomList_RoomsEntry_DoNotUse >(Arena* arena) {
   return Arena::CreateInternal< ::packet::RoomList_RoomsEntry_DoNotUse >(arena);

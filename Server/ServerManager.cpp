@@ -8,55 +8,25 @@
 #include "def.h"
 #include "Packet.h"
 
-void ServerManager::InitRoomList()
+void ServerManager::InitRoom(RoomInfo* pRoomInfo, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName)
 {
-	Room* newRoom = new Room();
-	newRoom->set_roomid(roomIdStatus);
-	newRoom->set_host(0);
-	newRoom->set_current(3);
-	newRoom->set_limit(8);
-	newRoom->set_name("Room #1");
-	newRoom->set_readycount(0);
+	pRoomInfo->set_host(0);
+	pRoomInfo->set_current(1);
+	pRoomInfo->set_limit(limits);
+	pRoomInfo->set_name(roomName);
+	pRoomInfo->set_readycount(0);
+	pRoomInfo->set_roomid(roomIdStatus);
 
-	Client* client = newRoom->add_redteam();
-	client->set_ip("192.168.0.123");
-	client->set_port(35467);
+	Client* client = pRoomInfo->add_redteam();
+	client->set_name(userName);
 	client->set_position(0);
 	client->set_ready(false);
 
-	client = newRoom->add_redteam();
-	client->set_ip("192.168.0.127");
-	client->set_port(35489);
-	client->set_position(1);
-	client->set_ready(false);
-
-	client = newRoom->add_blueteam();
-	client->set_ip("192.168.0.190");
-	client->set_port(30089);
-	client->set_position(8);
-	client->set_ready(false);
-
-	(*roomList.mutable_rooms())[roomIdStatus] = *newRoom;
-	roomTable.insert(std::make_pair("Room #1", roomIdStatus++));
-}
-
-void ServerManager::InitRoom(Room* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits)
-{
-	pRoom->set_host(0);
-	pRoom->set_current(1);
-	pRoom->set_limit(limits);
-	pRoom->set_name(roomName);
-	pRoom->set_readycount(0);
-	pRoom->set_roomid(roomIdStatus++);
-
-	char ip[20]; 
-	int port;
-	lpSocketInfo->GetIpAndPort(ip, port);
-	Client* client = pRoom->add_redteam();
-	client->set_ip(string(ip));
-	client->set_port(port);
-	client->set_position(0);
-	client->set_ready(false);
+	(*roomList.mutable_rooms())[roomIdStatus] = *pRoomInfo;
+	roomTable.insert(std::make_pair(roomName, roomIdStatus));
+	Room* room = new Room(&((*roomList.mutable_rooms())[roomIdStatus]));
+	room->AddClientInfo(lpSocketInfo);
+	serverRoomList[roomIdStatus++] = room;
 }
 
 ServerManager::ServerManager() 
@@ -65,8 +35,6 @@ ServerManager::ServerManager()
 	hCompPort = NULL; 
 	servSock = INVALID_SOCKET;
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
-
-	InitRoomList();
 }
 
 ServerManager::~ServerManager() 
@@ -280,7 +248,7 @@ void ServerManager::AcceptClient()
 				ErrorHandling(WSAGetLastError(), false);
 				continue;
 			}
-
+			/* 원래 코드위치
 			// Connect시 Client에서 RoomList을 전달
 			DWORD dwFlags, dwSendBytes;
 			dwFlags = dwSendBytes = 0;
@@ -299,6 +267,10 @@ void ServerManager::AcceptClient()
 					continue;
 				}
 			}
+			*/
+
+			//JS TEST
+			SendInitData(lpSocketInfo);
 		}
 		__finally
 		{
@@ -412,7 +384,7 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
-	printf("Send Completed %dbytes", dwBytesTransferred);
+	printf("Send Completed %dbytes\n", dwBytesTransferred);
 	// Event에 따라 분기처리
 	// 1. 초기 Connection 이후 RoomList Send Completion -> nothing.
 	// 2. Response RoomList -> nothing
@@ -483,68 +455,112 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		if (contentType == "CREATE_ROOM")
 		{
 			string roomName = dataMap["roomName"];
+			string userName = dataMap["userName"];
 			int limits = stoi(dataMap["limits"]);
 
-			std::cout << "RoomName: " << roomName << ", " << "Limits: " << limits << std::endl;
+			std::cout << "RoomName: " << roomName << ", " << "Limits: " << limits << "Username: " << userName << std::endl;
 
-			if (roomTable.find(roomName) != roomTable.end()) {
-				// Room Name duplicated!!
+			if (roomTable.find(roomName) != roomTable.end()) 
+			{   // Room Name duplicated!!
 				Data response;
 				(*response.mutable_datamap())["contentType"] = "REJECT_CREATE_ROOM";
 				(*response.mutable_datamap())["errorCode"] = "400";
 				(*response.mutable_datamap())["errorMessage"] = "Duplicated Room Name";
 				lpSocketInfo->sendBuf->wsaBuf.len =
 					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
 			}
 			else 
-			{
-				Room* newRoom = new Room();
-				InitRoom(newRoom, lpSocketInfo, roomName, limits);
-				(*roomList.mutable_rooms())[newRoom->roomid()] = *newRoom;
-				roomTable.insert(std::make_pair(roomName, newRoom->roomid()));
+			{  // 정상적으로 생성이 가능한 상황
+				RoomInfo* newRoomInfo = new RoomInfo();
+				InitRoom(newRoomInfo, lpSocketInfo, roomName, limits, userName);
 				lpSocketInfo->sendBuf->wsaBuf.len = 
-					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, newRoom);
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, newRoomInfo);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
 			}
-			if (!SendPacket(lpSocketInfo))
-				return false;
 		}
 		else if(contentType == "ENTER_ROOM")
-		{
+		{ // 입장하려는 시점에 방이 존재하지 않는 경우
 			string roomName = dataMap["roomName"];
 			int roomIdToEnter = roomTable[roomName];
-			if (roomList.rooms().find(roomIdToEnter) == roomList.rooms().end()) {
+			if (roomList.rooms().find(roomIdToEnter) == roomList.rooms().end()) 
+			{
 				Data response;
 				(*response.mutable_datamap())["contentType"] = "REJECT_ENTER_ROOM";
 				(*response.mutable_datamap())["errorCode"] = "401";
 				(*response.mutable_datamap())["errorMessage"] = "Room already has been destroyed!";
 				lpSocketInfo->sendBuf->wsaBuf.len =
 					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
 			}
-			else {
-				int port;
-				char ip[20];
-			
-				Room& room = (*roomList.mutable_rooms())[roomIdToEnter];
-				lpSocketInfo->GetIpAndPort(ip, port);
+			else 
+			{ //입장하고자 하는 방이 존재하는 상황. **다만 인원수가 꽉 찼을 경우를 처리해주어야 한다.**
+				RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomIdToEnter];
 				//Setting Client State
 				Client* clnt;
-				if (room.current() % 2) {
-					clnt = room.add_blueteam();
-					clnt->set_position(room.blueteam_size() + 7);
+				string userName = dataMap["userName"];
+
+				if (roomInfo.redteam_size() > roomInfo.blueteam_size()) {
+					clnt = roomInfo.add_blueteam();
+					clnt->set_position(roomInfo.blueteam_size() + 7);
 				}
 				else {
-					clnt = room.add_redteam();
-					clnt->set_position(room.redteam_size() - 1);
+					clnt = roomInfo.add_redteam();
+					clnt->set_position(roomInfo.redteam_size() - 1);
 				}
-				clnt->set_ip(ip);
-				clnt->set_port(port);
+				clnt->set_name(userName);
 				clnt->set_ready(false);
-				room.set_current(room.current() + 1);
+				roomInfo.set_current(roomInfo.current() + 1);
 				lpSocketInfo->sendBuf->wsaBuf.len =
-					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &room);
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomInfo);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
+
+				Room* room = serverRoomList[roomIdToEnter];
+				BroadcastMessage(room, clnt); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
+				room->AddClientInfo(lpSocketInfo);
 			}
-			if (!SendPacket(lpSocketInfo))
-				return false;
+		}
+		else if (contentType == "READY_EVENT") 
+		{
+			int roomId = stoi(dataMap["roomId"]);
+			int position = stoi(dataMap["position"]);
+			Room* room = serverRoomList[roomId];
+			room->ProcessReadyEvent(position);
+			BroadcastMessage(room, message);
+		}
+		else if (contentType == "TEAM_CHANGE") 
+		{
+			std::cout << "team change called" << std::endl;
+			int roomId = stoi(dataMap["roomId"]);
+			int position = stoi(dataMap["prev_position"]);
+			Room* room = serverRoomList[roomId];
+			int newPosition = room->ProcessTeamChangeEvent(position);
+			if (newPosition == -1)
+			{
+				//이동이 불가능 할 경우. 아무것도 보내지않으면 아무행동도 일어나지 않을 것이기에 이대로 놔둬도 괜춘쓰
+			}
+			
+			Data data;
+			(*data.mutable_datamap())["contentType"] = dataMap["contentType"];
+			(*data.mutable_datamap())["prev_position"] = dataMap["prev_position"];
+			(*data.mutable_datamap())["next_position"] = std::to_string(newPosition);
+			BroadcastMessage(room, &data);
+		}
+		else if (contentType == "LEAVE_GAMEROOM") 
+		{
+			std::cout << "leave gameroom called" << std::endl;
+		}
+		else if (contentType == "CHAT_MESSAGE") 
+		{
+			std::cout << "chat message called" << std::endl;
 		}
 
 		delete message;
@@ -559,6 +575,61 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		// ....
 
 		return true;
+	}
+}
+
+void ServerManager::SendInitData(SocketInfo* lpSocketInfo) {
+	static int indicator = 1;
+
+	DWORD dwFlags, dwSendBytes;
+	dwFlags = dwSendBytes = 0;
+	ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(OVERLAPPED));
+
+	// Serialize Room List;
+	lpSocketInfo->sendBuf->wsaBuf.len =
+		lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+	if (WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
+		&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL) == SOCKET_ERROR)
+	{
+		int errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			ErrorHandling("Init Send Operation(Send Room List) Error!!", errCode, false);
+		}
+	}
+	
+	dwFlags = dwSendBytes = 0;
+	ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(OVERLAPPED));
+
+	Data data;
+	(*data.mutable_datamap())["contentType"] = "ASSIGN_USERNAME";
+	(*data.mutable_datamap())["userName"] = "TempUser" + std::to_string(indicator);
+	indicator++;
+
+	lpSocketInfo->sendBuf->wsaBuf.len =
+		lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &data);
+	if (WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
+		&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL) == SOCKET_ERROR)
+	{
+		int errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			ErrorHandling("Init Send Operation(Send User Name) Error!!", errCode, false);
+		}
+	}
+}
+
+void ServerManager::BroadcastMessage(Room * room, MessageLite * message)
+{
+	auto begin = room->ClientSocketsBegin();
+	auto end = room->ClientSocketsEnd();
+
+	for (auto itr = begin; itr != end; itr++) {
+		(*itr)->sendBuf->wsaBuf.len =
+			(*itr)->sendBuf->lpPacket->PackMessage(-1, message);
+		
+		if (!SendPacket(*itr))
+			std::cout << "메시지 전송 실패쓰" << std::endl;
 	}
 }
 
