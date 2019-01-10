@@ -11,7 +11,7 @@
 
 #include "ErrorHandle.h"
 #include "protobuf/room.pb.h"
-#include "data.pb.h"
+#include "protobuf/data.pb.h"
 
 using namespace packet;
 using namespace google::protobuf;
