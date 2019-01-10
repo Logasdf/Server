@@ -16,6 +16,7 @@ public:
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
 	void ProcessReadyEvent(int position);
 	int ProcessTeamChangeEvent(int position);
+	bool ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, bool& hostChanged);
 
 private:
 	RoomInfo* roomInfo;
@@ -24,5 +25,6 @@ private:
 
 	Client* GetClient(int position);
 	void MoveClientToOppositeTeam(int prev_pos, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo);
+	void ChangeGameroomHost(bool isOnRedteam);
 };
 
