@@ -500,32 +500,47 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 					return false;
 			}
 			else 
-			{ //입장하고자 하는 방이 존재하는 상황. **다만 인원수가 꽉 찼을 경우를 처리해주어야 한다.**
+			{ //입장하고자 하는 방이 존재하는 상황.
 				RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomIdToEnter];
-				//Setting Client State
-				Client* clnt;
-				string userName = dataMap["userName"];
+				
+				if (roomInfo.current() == roomInfo.limit())
+				{ // 인원수 꽉찬경우.
+					Data response;
+					(*response.mutable_datamap())["contentType"] = "REJECT_ENTER_ROOM";
+					(*response.mutable_datamap())["errorCode"] = "401";
+					(*response.mutable_datamap())["errorMessage"] = "The Room is already full!";
+					lpSocketInfo->sendBuf->wsaBuf.len =
+						lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
 
-				if (roomInfo.redteam_size() > roomInfo.blueteam_size()) {
-					clnt = roomInfo.add_blueteam();
-					clnt->set_position(roomInfo.blueteam_size() + 7);
+					if (!SendPacket(lpSocketInfo))
+						return false;
 				}
-				else {
-					clnt = roomInfo.add_redteam();
-					clnt->set_position(roomInfo.redteam_size() - 1);
+				else
+				{ // 방 입장 처리
+					Client* clnt;
+					string userName = dataMap["userName"];
+
+					if (roomInfo.redteam_size() > roomInfo.blueteam_size()) {
+						clnt = roomInfo.add_blueteam();
+						clnt->set_position(roomInfo.blueteam_size() + 7);
+					}
+					else {
+						clnt = roomInfo.add_redteam();
+						clnt->set_position(roomInfo.redteam_size() - 1);
+					}
+					clnt->set_name(userName);
+					clnt->set_ready(false);
+					roomInfo.set_current(roomInfo.current() + 1);
+					lpSocketInfo->sendBuf->wsaBuf.len =
+						lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomInfo);
+
+					if (!SendPacket(lpSocketInfo))
+						return false;
+
+					Room* room = serverRoomList[roomIdToEnter];
+					BroadcastMessage(room, clnt); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
+					room->AddClientInfo(lpSocketInfo);
 				}
-				clnt->set_name(userName);
-				clnt->set_ready(false);
-				roomInfo.set_current(roomInfo.current() + 1);
-				lpSocketInfo->sendBuf->wsaBuf.len =
-					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomInfo);
-
-				if (!SendPacket(lpSocketInfo))
-					return false;
-
-				Room* room = serverRoomList[roomIdToEnter];
-				BroadcastMessage(room, clnt); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
-				room->AddClientInfo(lpSocketInfo);
 			}
 		}
 		else if (contentType == "READY_EVENT") 
