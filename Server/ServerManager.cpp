@@ -248,28 +248,7 @@ void ServerManager::AcceptClient()
 				ErrorHandling(WSAGetLastError(), false);
 				continue;
 			}
-			/* 원래 코드위치
-			// Connect시 Client에서 RoomList을 전달
-			DWORD dwFlags, dwSendBytes;
-			dwFlags = dwSendBytes = 0;
-			ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(OVERLAPPED));
-
-			// Serialize Room List;
-			lpSocketInfo->sendBuf->wsaBuf.len =
-				lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
-			if (WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
-				&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL) == SOCKET_ERROR)
-			{
-				int errCode = WSAGetLastError();
-				if (errCode != WSA_IO_PENDING)
-				{
-					ErrorHandling("Init Send Operation(Send Room List) Error!!", errCode, false);
-					continue;
-				}
-			}
-			*/
-
-			//JS TEST
+			
 			SendInitData(lpSocketInfo);
 		}
 		__finally
@@ -436,8 +415,17 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 {
 	if (type == MessageType::REFRESH)
 	{
-		lpSocketInfo->sendBuf->wsaBuf.len
-			= lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+		if(roomList.rooms_size() == 0) 
+		{
+			lpSocketInfo->sendBuf->wsaBuf.len
+				= lpSocketInfo->sendBuf->lpPacket->PackMessage(MessageType::EMPTY_ROOMLIST, NULL);
+		}
+		else
+		{
+			lpSocketInfo->sendBuf->wsaBuf.len
+				= lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomList);
+		}
+
 		if (!SendPacket(lpSocketInfo))
 			return false;
 	}

@@ -26,7 +26,7 @@ enum MessageType {
 	REFRESH,
 	CREATE,
 	ENTER,
-	READY_EVENT,
+	EMPTY_ROOMLIST,
 
 
 	DATA = 100,
