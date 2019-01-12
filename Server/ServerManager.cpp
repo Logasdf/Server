@@ -568,9 +568,12 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 
 			bool hostChanged = false;
 			bool isClosed =  room->ProcessLeaveGameroomEvent(position, lpSocketInfo, hostChanged);
+			RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
+
 			if (isClosed)
 			{ //방이 사라진 경우, 리소스 정리해야함
 				serverRoomList.erase(roomId); // Room* 서버 방 리스트에서 제거 (해제 아님)
+				roomTable.erase(roomInfo.name()); // Map<방이름, roomId> 에서 제거
 				(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
 				delete room; // Room* 해제 여기서
 			}
@@ -578,7 +581,6 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			{
 				if (hostChanged)
 				{ //방장이 바뀐 경우. 바뀐 방장의 position 을 보내주면 된다.
-					RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
 					Data data;
 					(*data.mutable_datamap())["contentType"] = "HOST_CHANGED";
 					(*data.mutable_datamap())["newHost"] = std::to_string(roomInfo.host());
