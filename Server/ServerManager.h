@@ -55,4 +55,8 @@ private:
 	RoomList roomList;
 	std::unordered_map<int, Room*> serverRoomList;
 	std::unordered_map<string, int> roomTable;
+
+
+	std::unordered_map<int, int> checkCall;
+
 };

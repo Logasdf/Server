@@ -16,7 +16,7 @@ IOInfo* IOInfo::AllocateIoInfo()
 	IOInfo* lpIoInfo = new IOInfo();
 	lpIoInfo->lpPacket = Packet::AllocatePacket();
 	lpIoInfo->wsaBuf.buf = lpIoInfo->lpPacket->buffer;
-	lpIoInfo->wsaBuf.len = FOR_IO_SIZE;
+	lpIoInfo->wsaBuf.len = MAX_SIZE;
 	return lpIoInfo;
 }
 
