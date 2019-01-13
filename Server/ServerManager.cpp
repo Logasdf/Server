@@ -23,11 +23,13 @@ void ServerManager::InitRoom(RoomInfo* pRoomInfo, SocketInfo* lpSocketInfo, stri
 	client->set_ready(false);
 
 	WaitForSingleObject(hMutexObj, INFINITE);
+
 	(*roomList.mutable_rooms())[roomIdStatus] = *pRoomInfo;
 	roomTable.insert(std::make_pair(roomName, roomIdStatus));
 	Room* room = new Room(&((*roomList.mutable_rooms())[roomIdStatus]));
 	room->AddClientInfo(lpSocketInfo, userName);
 	serverRoomList[roomIdStatus++] = room;
+
 	ReleaseMutex(hMutexObj);
 }
 
@@ -329,11 +331,11 @@ bool ServerManager::SendPacket(SocketInfo * lpSocketInfo)
 	DWORD dwSendBytes = 0;
 	DWORD dwFlags = 0;
 
-	WaitForSingleObject(hMutexForSend, INFINITE);
+	//WaitForSingleObject(hMutexForSend, INFINITE);
 	ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
 		&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL);
-	ReleaseMutex(hMutexForSend);
+	//ReleaseMutex(hMutexForSend);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -356,11 +358,11 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 	DWORD dwRecvBytes = 0;
 	DWORD dwFlags = 0;
 
-	WaitForSingleObject(hMutexForRecv, INFINITE);
+	//WaitForSingleObject(hMutexForRecv, INFINITE);
 	ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
 		&dwRecvBytes, &dwFlags, &(lpSocketInfo->recvBuf->overlapped), NULL);
-	ReleaseMutex(hMutexForRecv);
+	//ReleaseMutex(hMutexForRecv);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -378,49 +380,53 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
+	WaitForSingleObject(hMutexObj, INFINITE);
+
 	lpSocketInfo->sendBuf->lpPacket->ClearBuffer();
 	//fprintf(stderr, "Send Bytes: %d\n", dwBytesTransferred);
-	// Event에 따라 분기처리
-	// 1. 초기 Connection 이후 RoomList Send Completion -> nothing.
-	// 2. Response RoomList -> nothing
-	// 3. Response Created Rooom -> Client state update
-	// 4. Response Enter Room -> Client state update
 
 	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	if (!RecvPacket(lpSocketInfo))
+	if (!RecvPacket(lpSocketInfo)) {
+		ReleaseMutex(hMutexObj);
 		return false;
+	}
+
+	ReleaseMutex(hMutexObj);
 
 	return true;
 }
 
-// TCP는 데이터 경계가 없다는 거 기억하고, 그에 대한 처리 구현해야함... 
-// 일단은 중간에 잘리지 않고 받는다고 가정하고 구현하고 있음...
-// Event에 따라 분기처리
-// 1. Request RoomList(by refreshing the room list)
-// 2. Request Create Room (by creating a room)
-// 3. Request Enter Room (by clicking a room in the room list)
-// 4.
-// 그외. Echo
 bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
 {
 	lpSocketInfo->recvBuf->called = false;
 
 	int type, length;
 	MessageLite* pMessage;
+
+	//WaitForSingleObject(hMutexObj, INFINITE);
+
 	//rtn이 false일 경우, Unpack하기에는 정보가 부족한 것이므로 Re-recv Call
 	bool rtn = lpSocketInfo->recvBuf->lpPacket->UnpackMessage(dwBytesTransferred, type, length, pMessage);
 	if (!rtn) {
-		return RecvPacket(lpSocketInfo);
+		rtn = RecvPacket(lpSocketInfo);
+		ReleaseMutex(hMutexObj);
+		return rtn;
 	}
 
-	rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
-		: HandleWithBody(lpSocketInfo, pMessage, type);
-	if (!rtn)
+	rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type) : HandleWithBody(lpSocketInfo, pMessage, type);
+	if (!rtn) {
+		ReleaseMutex(hMutexObj);
 		return false;
+	}
+		
 
 	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	if (!RecvPacket(lpSocketInfo))
+	if (!RecvPacket(lpSocketInfo)) {
+		ReleaseMutex(hMutexObj);
 		return false;
+	}
+
+	//ReleaseMutex(hMutexObj);
 
 	return true;
 }
@@ -611,10 +617,10 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			std::cout << "start game called" << std::endl;
 			int roomId = stoi(dataMap["roomId"]);
 
-			WaitForSingleObject(hMutexObj, INFINITE);
+			//WaitForSingleObject(hMutexObj, INFINITE);
 			Room*& _room = serverRoomList[roomId];
 			BroadcastMessage(_room, nullptr, START_GAME);
-			ReleaseMutex(hMutexObj);
+			//ReleaseMutex(hMutexObj);
 		}
 		else if (contentType == "FIRE_BULLET")
 		{
@@ -634,29 +640,28 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			ReleaseMutex(hMutexObj);
 		}
 		else if (contentType == "BE_SHOT") {
-			std::cout << "be_shot" << std::endl;
-			int roomId = stoi(dataMap["roomId"]);
-			string fromClnt = dataMap["fromClnt"];
-			string toClnt = dataMap["toClnt"];
-			//string hitType = dataMap["hitType"];
+			//std::cout << "be_shot" << std::endl;
+			//int roomId = stoi(dataMap["roomId"]);
+			//string fromClnt = dataMap["fromClnt"];
+			//string toClnt = dataMap["toClnt"];
+			////string hitType = dataMap["hitType"];
 
-			Data response;
-			(*response.mutable_datamap())["contentType"] = "BE_SHOT";
-			(*response.mutable_datamap())["fromClnt"] = fromClnt;
-			(*response.mutable_datamap())["toClnt"] = toClnt;
-			//(*response.mutable_datamap)["hitType"] = toClnt;
+			//Data response;
+			//(*response.mutable_datamap())["contentType"] = "BE_SHOT";
+			//(*response.mutable_datamap())["fromClnt"] = fromClnt;
+			//(*response.mutable_datamap())["toClnt"] = toClnt;
+			////(*response.mutable_datamap)["hitType"] = toClnt;
 
-			WaitForSingleObject(hMutexObj, INFINITE);
-			Room*& _room = serverRoomList[roomId];
-			SocketInfo*& toClntSock = _room->GetSocketUsingName(toClnt);
+			////WaitForSingleObject(hMutexObj, INFINITE);
+			//Room*& _room = serverRoomList[roomId];
+			//SocketInfo*& toClntSock = _room->GetSocketUsingName(toClnt);
 
-			toClntSock->sendBuf->wsaBuf.len =
-				toClntSock->sendBuf->lpPacket->PackMessage(-1, &response);
-			ReleaseMutex(hMutexObj);
-			if (!SendPacket(toClntSock))
-				return false;
+			//toClntSock->sendBuf->wsaBuf.len =
+			//	toClntSock->sendBuf->lpPacket->PackMessage(-1, &response);
+			////ReleaseMutex(hMutexObj);
+			//if (!SendPacket(toClntSock))
+			//	return false;
 		}
-		//else { return false;  }
 
 		//delete message;
 		return true;
@@ -674,8 +679,6 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			ReleaseMutex(hMutexObj);
 			//delete message;
 		}
-		//else { return false; }
-		// ....
 
 		return true;
 	}
