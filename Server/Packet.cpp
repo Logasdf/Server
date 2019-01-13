@@ -23,9 +23,9 @@ Packet::InvTypeMap Packet::invTypeMap = {
 
 Packet::Packet() 
 {
-	ZeroMemory(buffer, FOR_IO_SIZE);
-	ZeroMemory(backup, FOR_BAKCUP_SIZE);
-	ZeroMemory(pack, FOR_PACK_SIZE);
+	memset(buffer, 0, FOR_IO_SIZE);
+	memset(backup, 0, FOR_BAKCUP_SIZE);
+	memset(pack, 0, FOR_PACK_SIZE);
 
 	backupBufLength = packBufLength = packBufOffset = 0;
 	hMutexObj = CreateMutex(NULL, false, NULL);
@@ -54,9 +54,9 @@ bool Packet::CheckValidType(int& type)
 
 int Packet::PackMessage(int type, MessageLite* message)
 {
-	WaitForSingleObject(hMutexObj, INFINITE);
+	//WaitForSingleObject(hMutexObj, INFINITE);
 	ClearBuffer();
-	ZeroMemory(pack, FOR_PACK_SIZE);
+	memset(pack, 0, FOR_PACK_SIZE);
 
 	aos = new ArrayOutputStream(pack, FOR_PACK_SIZE);
 	cos = new CodedOutputStream(aos);
@@ -73,11 +73,11 @@ int Packet::PackMessage(int type, MessageLite* message)
 	}
 
 	int rtn = cos->ByteCount();
-	CopyMemory(buffer, pack, rtn);
+	memcpy(buffer, pack, rtn);
 
 	delete cos;
 	delete aos;
-	ReleaseMutex(hMutexObj);
+	//ReleaseMutex(hMutexObj);
 
 	return rtn;
 }
@@ -85,45 +85,67 @@ int Packet::PackMessage(int type, MessageLite* message)
 bool Packet::UnpackMessage(DWORD& bytesTransferred, int& type, int& length, MessageLite*& message)
 {
 	WaitForSingleObject(hMutexObj, INFINITE);
+
+	packBufOffset = packBufLength = 0;
+	memset(pack, 0, FOR_PACK_SIZE);
+	// backup이 존재한다면
 	if (backupBufLength > 0) {
-		CopyMemory(pack, backup, backupBufLength);
-		CopyMemory(pack + backupBufLength, buffer, bytesTransferred);
+		memcpy(pack, backup, backupBufLength);
+		memcpy(pack + backupBufLength, buffer, (size_t)bytesTransferred);
 		packBufLength = backupBufLength + bytesTransferred;
+		fprintf(stderr, "[In bakcup branch] offset: %d, length: %d\n", packBufOffset, packBufLength);
 	}
 	else {
-		CopyMemory(pack, buffer, bytesTransferred);
+		memcpy(pack, buffer, (size_t)bytesTransferred);
 		packBufLength = bytesTransferred;
+		fprintf(stderr, "[In buffer branch] offset: %d, length: %d\n", packBufOffset, packBufLength);
 	}
-	packBufOffset = 0;
 
 	ais = new ArrayInputStream(pack, FOR_PACK_SIZE);
 	cis = new CodedInputStream(ais);
 
+	// rtn의 값에 따라 추가 수신여부를 판단
 	bool rtn = true;
 	unsigned int _type, _length;
-	while (packBufOffset < packBufLength) 
+	while (packBufLength > 0) 
 	{
 		if (packBufLength < 8) {
-			fprintf(stderr, "packBufLength < 8 => Can't get header info...");
+			fprintf(stderr, "packBufLength < 8 => Can't get header info...\n");
+			fprintf(stderr, "[After Length < 8] offset: %d, length: %d\n", packBufOffset, packBufLength);
+
+			memset(backup, 0, FOR_BAKCUP_SIZE);
+			memcpy(backup, pack + packBufOffset, packBufLength);
+			backupBufLength = packBufLength;
 			rtn = false;
 			break;
 		}
 		cis->ReadLittleEndian32(&_type);
 		type = (int)_type;
 		packBufOffset += 4; packBufLength -= 4;
+
+		fprintf(stderr, "[After Type] offset: %d, length: %d\n", packBufOffset, packBufLength);
+
 		cis->ReadLittleEndian32(&_length);
 		length = (int)_length;
 		packBufOffset += 4; packBufLength -= 4;
-		if (length != 0)
-		{
+
+		fprintf(stderr, "[After Length] offset: %d, length: %d\n", packBufOffset, packBufLength);
+
+		fprintf(stderr, "[After Type and Length] Type: %d, Body Length: %d\n", type, length);
+		if (type == 0 && length == 0) break;
+		if (length > 0)
+		{	
+			// Message Body가 정확히 Length와 일치할 때,
 			if (length <= packBufLength) {
 				Deserialize(type, cis, message);
 				packBufOffset += length;
 				packBufLength -= length;
+
+				fprintf(stderr, "[After Body] offset: %d, length: %d\n", packBufOffset, packBufLength);
 			}
 			else {
-				ZeroMemory(backup, FOR_BAKCUP_SIZE);
-				CopyMemory(backup, pack + packBufOffset - 8, packBufLength + 8);
+				memset(backup, 0, FOR_BAKCUP_SIZE);
+				memcpy(backup, pack + packBufOffset - 8, packBufLength + 8);
 				backupBufLength = packBufLength + 8;
 				rtn = false;
 				break;
@@ -134,7 +156,6 @@ bool Packet::UnpackMessage(DWORD& bytesTransferred, int& type, int& length, Mess
 	delete cis;
 	delete ais;
 	ClearBuffer();
-	ZeroMemory(pack, FOR_PACK_SIZE);
 	ReleaseMutex(hMutexObj);
 	return rtn;
 }
