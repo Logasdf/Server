@@ -8,6 +8,7 @@
 #include "def.h"
 #include "SocketInfo.h"
 #include "protobuf/room.pb.h"
+#include "protobuf/data.pb.h"
 #include "Room.h"
 
 class ServerManager {
@@ -38,7 +39,7 @@ private:
 	//Temperary Method
 	void InitRoom(RoomInfo* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName);
 	void SendInitData(SocketInfo*);
-	void BroadcastMessage(Room* room, MessageLite* message);
+	void BroadcastMessage(Room* room, MessageLite* message = nullptr, int type = -1);
 
 private:
 	WSAData wsaData;
@@ -47,9 +48,15 @@ private:
 
 	int threadPoolSize;
 	HANDLE hMutexObj;
+	HANDLE hMutexForSend;
+	HANDLE hMutexForRecv;
 
 	int roomIdStatus;
 	RoomList roomList;
 	std::unordered_map<int, Room*> serverRoomList;
 	std::unordered_map<string, int> roomTable;
+
+
+	std::unordered_map<int, int> checkCall;
+
 };
