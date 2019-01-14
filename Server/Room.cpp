@@ -10,23 +10,27 @@ Room::~Room()
 {
 	DeleteCriticalSection(&csForClientSockets);
 	DeleteCriticalSection(&csForRoomInfo);
-	std::cout << "Room °´Ã¼°¡ »èÁ¦µÇ¾ú½À´Ï´Ù." << std::endl;
+	std::cout << "Room ê°ì²´ê°€ ì‚­ì œë˜ì—ˆìŠµë‹ˆë‹¤." << std::endl;
 }
 
-void Room::AddClientInfo(SocketInfo * lpSocketInfo)
+void Room::AddClientInfo(SocketInfo * lpSocketInfo, string& userName)
 {
 	EnterCriticalSection(&csForClientSockets);
 	clientSockets.push_front(lpSocketInfo);
 	LeaveCriticalSection(&csForClientSockets);
-	std::cout << "Å¬¶óÀÌ¾ğÆ®Á¤º¸ Ãß°¡ ¿Ï·á" << std::endl;
+	clientMap[userName] = lpSocketInfo;
+	std::cout << "í´ë¼ì´ì–¸íŠ¸ì •ë³´ ì¶”ê°€ ì™„ë£Œ" << std::endl;
 }
 
-void Room::RemoveClientInfo(SocketInfo * lpSocketInfo)
+void Room::RemoveClientInfo(SocketInfo * lpSocketInfo, string& userName)
 {
 	EnterCriticalSection(&csForClientSockets);
 	clientSockets.remove(lpSocketInfo);
 	LeaveCriticalSection(&csForClientSockets);
-	std::cout << "Å¬¶óÀÌ¾ğÆ®Á¤º¸ »èÁ¦ ¿Ï·á" << std::endl;
+	if (clientMap.find(userName) != clientMap.end()) {
+		clientMap.erase(userName);
+	}
+	std::cout << "í´ë¼ì´ì–¸íŠ¸ì •ë³´ ì‚­ì œ ì™„ë£Œ" << std::endl;
 }
 
 std::forward_list<SocketInfo*>::const_iterator Room::ClientSocketsBegin()
@@ -58,18 +62,18 @@ void Room::ProcessReadyEvent(int position)
 	{
 		roomInfo->set_readycount(roomInfo->readycount() - 1);
 	}	
-	std::cout << "ÇöÀç ¹æÀÇ ·¹µğÁßÀÎ À¯Àú ¼ö : " << roomInfo->readycount() << std::endl;
+	std::cout << "í˜„ì¬ ë°©ì˜ ë ˆë””ì¤‘ì¸ ìœ ì € ìˆ˜ : " << roomInfo->readycount() << std::endl;
 	affectedClient->set_ready(!affectedClient->ready());
 	LeaveCriticalSection(&csForRoomInfo);
 }
 
 int Room::ProcessTeamChangeEvent(int position)
 {
-	//1. ÇöÀç ÆÀÀÌ ¾î´À ÆÀÀÎ°¡¸¦ È®ÀÎÇÏ°í Å¸ ÆÀ¿¡ Á¸ÀçÇÏ´Â ºóÀÚ¸®°¡ ÀÖ´ÂÁö È®ÀÎ
-	//   -> ºóÀÚ¸®°¡ ¾øÀ¸¸é -1À» ¹İÈ¯.
-	//2. Å¬¶óÀÌ¾ğÆ®ÀÇ ÀÚ¸®¸¦ ¿Å±â°í, °¢°¢ ÆÀÀÇ À¯Àú ¼ö¸¦ ÀûÀıÇÏ°Ô Áõ°¨½ÃÅ²´Ù. -> ÀÚµ¿À¸·Î ÇÔ
-	//3. »õ·Î¿î ÀÚ¸®ÀÇ ÀÎµ¦½º¸¦ ¹İÈ¯ÇÑ´Ù.
-	//¹æÀåÀÎ °æ¿ì¿¡´Â hostÀ§Ä¡¸¦ º¯°æÇØÁÖ¾î¾ßÇÔ ** »©¸Ô¾ú´Ù°¡ Ãß°¡ÇÔ
+	//1. í˜„ì¬ íŒ€ì´ ì–´ëŠ íŒ€ì¸ê°€ë¥¼ í™•ì¸í•˜ê³  íƒ€ íŒ€ì— ì¡´ì¬í•˜ëŠ” ë¹ˆìë¦¬ê°€ ìˆëŠ”ì§€ í™•ì¸
+	//   -> ë¹ˆìë¦¬ê°€ ì—†ìœ¼ë©´ -1ì„ ë°˜í™˜.
+	//2. í´ë¼ì´ì–¸íŠ¸ì˜ ìë¦¬ë¥¼ ì˜®ê¸°ê³ , ê°ê° íŒ€ì˜ ìœ ì € ìˆ˜ë¥¼ ì ì ˆí•˜ê²Œ ì¦ê°ì‹œí‚¨ë‹¤. -> ìë™ìœ¼ë¡œ í•¨
+	//3. ìƒˆë¡œìš´ ìë¦¬ì˜ ì¸ë±ìŠ¤ë¥¼ ë°˜í™˜í•œë‹¤.
+	//ë°©ì¥ì¸ ê²½ìš°ì—ëŠ” hostìœ„ì¹˜ë¥¼ ë³€ê²½í•´ì£¼ì–´ì•¼í•¨ ** ë¹¼ë¨¹ì—ˆë‹¤ê°€ ì¶”ê°€í•¨
 	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
 	
 	int maxuser = roomInfo->limit() / 2;
@@ -102,30 +106,35 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, boo
 	bool isClosed = false;
 
 	EnterCriticalSection(&csForRoomInfo);
-	if (isOnRedTeam) // Å¬¶óÀÌ¾ğÆ® °´Ã¼¸¦ ¸®½ºÆ®¿¡¼­ »èÁ¦ÇÑ´Ù ( ÇØÁ¦±îÁö ÇØÁÜ )
+	if (isOnRedTeam) // í´ë¼ì´ì–¸íŠ¸ ê°ì²´ë¥¼ ë¦¬ìŠ¤íŠ¸ì—ì„œ ì‚­ì œí•œë‹¤ ( í•´ì œê¹Œì§€ í•´ì¤Œ )
 		roomInfo->mutable_redteam()->DeleteSubrange(position, 1);
 	else
 		roomInfo->mutable_blueteam()->DeleteSubrange(position % BLUEINDEXSTART, 1);
 
 	EnterCriticalSection(&csForClientSockets);
-	clientSockets.remove(lpSocketInfo); //Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏÀ» forward_list¿¡¼­ Á¦°Å. °ÔÀÓÁ¾·á°¡ ¾Æ´Ï¶ó¼­ ÇØÁ¦´Â ÇÏ¸é ¾È µÊ.
+	clientSockets.remove(lpSocketInfo); //í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ì„ forward_listì—ì„œ ì œê±°. ê²Œì„ì¢…ë£Œê°€ ì•„ë‹ˆë¼ì„œ í•´ì œëŠ” í•˜ë©´ ì•ˆ ë¨.
 	LeaveCriticalSection(&csForClientSockets);
 
 	if (roomInfo->current() == 1)
 	{
-		isClosed = true; // È¥ÀÚÀÖ´Â »óÈ²ÀÌ¶ó ¹æ ±úÁö´Â °æ¿ì
+		isClosed = true; // í˜¼ììˆëŠ” ìƒí™©ì´ë¼ ë°© ê¹¨ì§€ëŠ” ê²½ìš°
 	}
 	else
 	{
 		if (roomInfo->host() == position)
-		{ //2 - ¹æ¿¡ È¥ÀÚ°¡ ¾Æ´Ñµ¥, ¹æÀåÀÎ °æ¿ì
+		{ //2 - ë°©ì— í˜¼ìê°€ ì•„ë‹Œë°, ë°©ì¥ì¸ ê²½ìš°
 			hostChanged = true;
-			ChangeGameroomHost(isOnRedTeam); //¹æÀå º¯°æ
+			ChangeGameroomHost(isOnRedTeam); //ë°©ì¥ ë³€ê²½
 		}
 	}
-	roomInfo->set_current(roomInfo->current() - 1); //ÀÎ¿ø¼ö ÁÙÀÌ±â
+	roomInfo->set_current(roomInfo->current() - 1); //ì¸ì›ìˆ˜ ì¤„ì´ê¸°
 	LeaveCriticalSection(&csForRoomInfo);
 	return isClosed;
+}
+
+SocketInfo*& Room::GetSocketUsingName(string & userName)
+{
+	return clientMap[userName];
 }
 
 Client* Room::GetClient(int position) 
@@ -137,14 +146,14 @@ Client* Room::GetClient(int position)
 
 void Room::MoveClientToOppositeTeam(int prev_pos, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo)
 {
-	Client* affectedClient = GetClient(prev_pos); // positionÀÌ 8 ÀÌ»óÀÌ¾îµµ ¾Ë¾Æ¼­ °è»êµÊ. ¹Ù·Î À§¿¡ ÀÖ´Â ÇÔ¼ö
+	Client* affectedClient = GetClient(prev_pos); // positionì´ 8 ì´ìƒì´ì–´ë„ ì•Œì•„ì„œ ê³„ì‚°ë¨. ë°”ë¡œ ìœ„ì— ìˆëŠ” í•¨ìˆ˜
 	Client* newClient = addTo->Add();
 	newClient->CopyFrom(*affectedClient);
 
 	deleteFrom->DeleteSubrange(prev_pos % BLUEINDEXSTART, 1);
 	newClient->set_position(next_pos);
 
-	if (prev_pos == roomInfo->host()) //¹æÀåÀÏ °æ¿ì¿¡ ¹æ Á¤º¸µµ ¼öÁ¤ÇØÁà¾ßÇÑ´Ù
+	if (prev_pos == roomInfo->host()) //ë°©ì¥ì¼ ê²½ìš°ì— ë°© ì •ë³´ë„ ìˆ˜ì •í•´ì¤˜ì•¼í•œë‹¤
 		roomInfo->set_host(next_pos);
 }
 
