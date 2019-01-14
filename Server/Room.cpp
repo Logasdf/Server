@@ -1,34 +1,53 @@
 #include "Room.h"
 
+Room::Room(RoomInfo * initVal) : roomInfo(initVal)
+{
+	InitializeCriticalSection(&csForClientSockets);
+	InitializeCriticalSection(&csForRoomInfo);
+}
+
 Room::~Room()
 {
+	DeleteCriticalSection(&csForClientSockets);
+	DeleteCriticalSection(&csForRoomInfo);
 	std::cout << "Room 객체가 삭제되었습니다." << std::endl;
 }
 
 void Room::AddClientInfo(SocketInfo * lpSocketInfo)
 {
+	EnterCriticalSection(&csForClientSockets);
 	clientSockets.push_front(lpSocketInfo);
+	LeaveCriticalSection(&csForClientSockets);
 	std::cout << "클라이언트정보 추가 완료" << std::endl;
 }
 
 void Room::RemoveClientInfo(SocketInfo * lpSocketInfo)
 {
+	EnterCriticalSection(&csForClientSockets);
 	clientSockets.remove(lpSocketInfo);
+	LeaveCriticalSection(&csForClientSockets);
 	std::cout << "클라이언트정보 삭제 완료" << std::endl;
 }
 
 std::forward_list<SocketInfo*>::const_iterator Room::ClientSocketsBegin()
 {
-	return clientSockets.cbegin();
+	EnterCriticalSection(&csForClientSockets);
+	auto itr = clientSockets.cbegin();
+	LeaveCriticalSection(&csForClientSockets);
+	return itr;
 }
 
 std::forward_list<SocketInfo*>::const_iterator Room::ClientSocketsEnd()
 {
-	return clientSockets.cend();
+	EnterCriticalSection(&csForClientSockets);
+	auto itr = clientSockets.cend();
+	LeaveCriticalSection(&csForClientSockets);
+	return itr;
 }
 
 void Room::ProcessReadyEvent(int position)
 {
+	EnterCriticalSection(&csForRoomInfo);
 	Client* affectedClient = GetClient(position);
 	bool toReady = !affectedClient->ready() ? true : false;
 	if (toReady) 
@@ -41,6 +60,7 @@ void Room::ProcessReadyEvent(int position)
 	}	
 	std::cout << "현재 방의 레디중인 유저 수 : " << roomInfo->readycount() << std::endl;
 	affectedClient->set_ready(!affectedClient->ready());
+	LeaveCriticalSection(&csForRoomInfo);
 }
 
 int Room::ProcessTeamChangeEvent(int position)
@@ -54,6 +74,7 @@ int Room::ProcessTeamChangeEvent(int position)
 	
 	int maxuser = roomInfo->limit() / 2;
 	int nextIdx;
+	EnterCriticalSection(&csForRoomInfo);
 	if (isOnRedTeam) 
 	{
 		nextIdx = roomInfo->blueteam_size();
@@ -71,7 +92,7 @@ int Room::ProcessTeamChangeEvent(int position)
 
 		MoveClientToOppositeTeam(position, nextIdx, roomInfo->mutable_blueteam(), roomInfo->mutable_redteam());
 	}
-
+	LeaveCriticalSection(&csForRoomInfo);
 	return nextIdx;
 }
 
@@ -80,12 +101,15 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, boo
 	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
 	bool isClosed = false;
 
+	EnterCriticalSection(&csForRoomInfo);
 	if (isOnRedTeam) // 클라이언트 객체를 리스트에서 삭제한다 ( 해제까지 해줌 )
 		roomInfo->mutable_redteam()->DeleteSubrange(position, 1);
 	else
 		roomInfo->mutable_blueteam()->DeleteSubrange(position % BLUEINDEXSTART, 1);
 
+	EnterCriticalSection(&csForClientSockets);
 	clientSockets.remove(lpSocketInfo); //클라이언트 소켓을 forward_list에서 제거. 게임종료가 아니라서 해제는 하면 안 됨.
+	LeaveCriticalSection(&csForClientSockets);
 
 	if (roomInfo->current() == 1)
 	{
@@ -100,6 +124,7 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, boo
 		}
 	}
 	roomInfo->set_current(roomInfo->current() - 1); //인원수 줄이기
+	LeaveCriticalSection(&csForRoomInfo);
 	return isClosed;
 }
 
