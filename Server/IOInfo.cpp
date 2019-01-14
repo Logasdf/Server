@@ -10,18 +10,13 @@ IOInfo::IOInfo()
 }
 
 IOInfo::~IOInfo() {}
-//
-//void IOInfo::BackupReceivedData(int & length)
-//{
-//	
-//}
 
 IOInfo* IOInfo::AllocateIoInfo()
 {
 	IOInfo* lpIoInfo = new IOInfo();
 	lpIoInfo->lpPacket = Packet::AllocatePacket();
 	lpIoInfo->wsaBuf.buf = lpIoInfo->lpPacket->buffer;
-	lpIoInfo->wsaBuf.len = MAX_SIZE;
+	lpIoInfo->wsaBuf.len = FOR_IO_SIZE;
 	return lpIoInfo;
 }
 

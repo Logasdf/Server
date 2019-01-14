@@ -5,15 +5,19 @@ Room::~Room()
 	std::cout << "Room 객체가 삭제되었습니다." << std::endl;
 }
 
-void Room::AddClientInfo(SocketInfo * lpSocketInfo)
+void Room::AddClientInfo(SocketInfo * lpSocketInfo, string& userName)
 {
 	clientSockets.push_front(lpSocketInfo);
+	clientMap[userName] = lpSocketInfo;
 	std::cout << "클라이언트정보 추가 완료" << std::endl;
 }
 
-void Room::RemoveClientInfo(SocketInfo * lpSocketInfo)
+void Room::RemoveClientInfo(SocketInfo * lpSocketInfo, string& userName)
 {
 	clientSockets.remove(lpSocketInfo);
+	if (clientMap.find(userName) != clientMap.end()) {
+		clientMap.erase(userName);
+	}
 	std::cout << "클라이언트정보 삭제 완료" << std::endl;
 }
 
@@ -101,6 +105,11 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, boo
 	}
 	roomInfo->set_current(roomInfo->current() - 1); //인원수 줄이기
 	return isClosed;
+}
+
+SocketInfo*& Room::GetSocketUsingName(string & userName)
+{
+	return clientMap[userName];
 }
 
 Client* Room::GetClient(int position) 
