@@ -40,6 +40,7 @@ private:
 	void InitRoom(RoomInfo* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName);
 	void SendInitData(SocketInfo*);
 	void BroadcastMessage(Room* room, MessageLite* message = nullptr, int type = -1);
+	void ProcessDisconnection(SocketInfo* lpSocketInfo);
 
 private:
 	WSAData wsaData;
@@ -55,8 +56,11 @@ private:
 	RoomList roomList;
 	std::unordered_map<int, Room*> serverRoomList;
 	std::unordered_map<string, int> roomTable;
-
-
-	std::unordered_map<int, int> checkCall;
-
+	std::unordered_map<SocketInfo*, Client*> clientLocationTable;
+  std::unordered_map<int, int> checkCall;
+  
+	CRITICAL_SECTION csForRoomList;
+	CRITICAL_SECTION csForServerRoomList;
+	CRITICAL_SECTION csForRoomTable;
+	CRITICAL_SECTION csForClientLocationTable;
 };
