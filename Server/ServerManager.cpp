@@ -22,11 +22,15 @@ void ServerManager::InitRoom(RoomInfo* pRoomInfo, SocketInfo* lpSocketInfo, stri
 	client->set_position(0);
 	client->set_ready(false);
 
+	WaitForSingleObject(hMutexObj, INFINITE);
+
 	(*roomList.mutable_rooms())[roomIdStatus] = *pRoomInfo;
 	roomTable.insert(std::make_pair(roomName, roomIdStatus));
 	Room* room = new Room(&((*roomList.mutable_rooms())[roomIdStatus]));
-	room->AddClientInfo(lpSocketInfo);
+	room->AddClientInfo(lpSocketInfo, userName);
 	serverRoomList[roomIdStatus++] = room;
+
+	ReleaseMutex(hMutexObj);
 }
 
 ServerManager::ServerManager() 
@@ -35,6 +39,8 @@ ServerManager::ServerManager()
 	hCompPort = NULL; 
 	servSock = INVALID_SOCKET;
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
+	hMutexForSend = CreateMutex(NULL, FALSE, NULL);
+	hMutexForRecv = CreateMutex(NULL, FALSE, NULL);
 }
 
 ServerManager::~ServerManager() 
@@ -45,6 +51,10 @@ ServerManager::~ServerManager()
 		closesocket(servSock);
 	if (hMutexObj != NULL)
 		CloseHandle(hMutexObj);
+	if (hMutexForSend != NULL)
+		CloseHandle(hMutexForSend);
+	if (hMutexForRecv != NULL)
+		CloseHandle(hMutexForRecv);
 
 	WSACleanup();
 }
@@ -67,84 +77,6 @@ void ServerManager::Stop()
 	hCompPort = NULL;
 	servSock = INVALID_SOCKET;
 	hMutexObj = NULL;
-}
-
-unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
-{
-	ServerManager* self = (ServerManager*)pVoid;
-	SocketInfo* lpSocketInfo;
-	IOInfo* lpIOInfo;
-	DWORD dwBytesTransferred = 0;
-
-	while (true)
-	{
-		lpSocketInfo = NULL;
-		lpIOInfo = NULL;
-
-		//fprintf(stderr, "[Current Thread #%d] => Enter\n", (HANDLE)GetCurrentThreadId());
-		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
-			reinterpret_cast<ULONG_PTR*>(&lpSocketInfo), reinterpret_cast<LPOVERLAPPED*>(&lpIOInfo), INFINITE);
-		//fprintf(stderr, "[Current Thread #%d] => Exit\n", (HANDLE)GetCurrentThreadId());
-		if (rtn)
-		{
-			if (((DWORD)lpSocketInfo) == KILL_THREAD) break;
-
-			if (lpIOInfo == NULL) {
-				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
-				continue;
-			}
-		}
-		else
-		{
-			if (lpIOInfo == NULL) {
-				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
-			}
-			else
-			{
-				ErrorHandling("Client Connection Close, Socket will close", false);
-				self->CloseClient(lpSocketInfo);
-			}
-			continue;
-		}
-
-		try
-		{
-			fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
-			if (dwBytesTransferred == 0)
-			{
-				fprintf(stderr, "[Log]: Client %d Connection Closed....\n", (HANDLE)lpSocketInfo->socket);
-				throw "[Cause]: dwBytesTransferr == 0";
-			}
-
-			if (lpIOInfo == lpSocketInfo->recvBuf)
-			{
-				LOG("Complete Receiving Message!!");
-				if (!(self->HandleRecvEvent(lpSocketInfo, dwBytesTransferred)))
-				{
-					throw "[Cause]: RecvEvent Handling Error!!";
-				}
-			}
-			else if (lpIOInfo == lpSocketInfo->sendBuf)
-			{
-				LOG("Complete Sending Message!!");
-				if (!(self->HandleSendEvent(lpSocketInfo, dwBytesTransferred)))
-				{
-					throw "[Cause]: SendEvent Handling Error!!";
-				}
-			}
-			else 
-			{
-				throw "[Cause]: UnknownEvent Exception...";
-			}
-		}
-		catch (const char* msg)
-		{
-			ErrorHandling(msg, WSAGetLastError(), false);
-			self->CloseClient(lpSocketInfo);
-		}
-	}
-
-	return 0;
 }
 
 void ServerManager::InitSocket(int port, int prime, int sub)
@@ -248,7 +180,7 @@ void ServerManager::AcceptClient()
 				ErrorHandling(WSAGetLastError(), false);
 				continue;
 			}
-			
+
 			SendInitData(lpSocketInfo);
 		}
 		__finally
@@ -272,13 +204,16 @@ void ServerManager::CloseClient(SocketInfo* lpSocketInfo, bool graceful)
 			LINGER LingerStruct;
 			LingerStruct.l_onoff = 1;
 			LingerStruct.l_linger = 0;
-			assert(SOCKET_ERROR 
-				!= setsockopt(lpSocketInfo->socket, SOL_SOCKET, SO_LINGER, 
-				(char*)&LingerStruct, sizeof(LingerStruct)));
+			if (SOCKET_ERROR == setsockopt(lpSocketInfo->socket, SOL_SOCKET, SO_LINGER,
+				(char*)&LingerStruct, sizeof(LingerStruct))) {
+				fprintf(stderr, "Invalid socket.... %d\n", WSAGetLastError());
+				ReleaseMutex(hMutexObj);
+				return;
+			}
 		}
 		closesocket(lpSocketInfo->socket);
+
 		SocketInfo::DeallocateSocketInfo(lpSocketInfo);
-		lpSocketInfo = NULL;
 	}
 	ReleaseMutex(hMutexObj);
 }
@@ -313,14 +248,95 @@ void ServerManager::ShutdownThreads()
 	}
 }
 
+unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
+{
+	ServerManager* self = (ServerManager*)pVoid;
+	SocketInfo* lpSocketInfo;
+	IOInfo* lpIOInfo;
+	DWORD dwBytesTransferred = 0;
+
+	while (true)
+	{
+		lpSocketInfo = NULL;
+		lpIOInfo = NULL;
+
+		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
+			reinterpret_cast<ULONG_PTR*>(&lpSocketInfo), reinterpret_cast<LPOVERLAPPED*>(&lpIOInfo), INFINITE);
+		if (rtn)
+		{
+			if (((DWORD)lpSocketInfo) == KILL_THREAD) break;
+
+			if (lpIOInfo == NULL) {
+				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+				continue;
+			}
+		}
+		else
+		{
+			if (lpIOInfo == NULL) {
+				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+			}
+			else
+			{
+				fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
+				fprintf(stderr, "#%d will close: %d\n", lpSocketInfo->socket, WSAGetLastError());
+				//ErrorHandling("Client Connection Close, Socket will close", false);
+				self->CloseClient(lpSocketInfo);
+			}
+			continue;
+		}
+
+		try
+		{
+			//fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
+			if (dwBytesTransferred == 0)
+			{
+				ErrorHandling("dwBytesTransferred == 0...", WSAGetLastError(), false);
+				fprintf(stderr, "[Log]: Client %d Connection Closed....\n", (HANDLE)lpSocketInfo->socket);
+				throw "[Cause]: dwBytesTransferr == 0";
+			}
+
+			if (lpIOInfo == lpSocketInfo->recvBuf)
+			{
+				//LOG("Complete Receiving Message!!");
+				if (!(self->HandleRecvEvent(lpSocketInfo, dwBytesTransferred)))
+				{
+					throw "[Cause]: RecvEvent Handling Error!!";
+				}
+			}
+			else if (lpIOInfo == lpSocketInfo->sendBuf)
+			{
+				//LOG("Complete Sending Message!!");
+				if (!(self->HandleSendEvent(lpSocketInfo, dwBytesTransferred)))
+				{
+					throw "[Cause]: SendEvent Handling Error!!";
+				}
+			}
+			else
+			{
+				throw "[Cause]: UnknownEvent Exception...";
+			}
+		}
+		catch (const char* msg)
+		{
+			ErrorHandling(msg, WSAGetLastError(), false);
+			self->CloseClient(lpSocketInfo);
+		}
+	}
+
+	return 0;
+}
+
 bool ServerManager::SendPacket(SocketInfo * lpSocketInfo)
 {
 	DWORD dwSendBytes = 0;
 	DWORD dwFlags = 0;
 
+	//WaitForSingleObject(hMutexForSend, INFINITE);
 	ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
 		&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL);
+	//ReleaseMutex(hMutexForSend);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -343,9 +359,17 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 	DWORD dwRecvBytes = 0;
 	DWORD dwFlags = 0;
 
+	checkCall[(int)lpSocketInfo->socket]++;
+	//fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
+	if (checkCall[(int)lpSocketInfo->socket] > 1) {
+		fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
+	}
+
+	//WaitForSingleObject(hMutexForRecv, INFINITE);
 	ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
 		&dwRecvBytes, &dwFlags, &(lpSocketInfo->recvBuf->overlapped), NULL);
+	//ReleaseMutex(hMutexForRecv);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -363,50 +387,60 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
 {
-	printf("Send Completed %dbytes\n", dwBytesTransferred);
-	// Event에 따라 분기처리
-	// 1. 초기 Connection 이후 RoomList Send Completion -> nothing.
-	// 2. Response RoomList -> nothing
-	// 3. Response Created Rooom -> Client state update
-	// 4. Response Enter Room -> Client state update
+	WaitForSingleObject(hMutexObj, INFINITE);
+
+	lpSocketInfo->sendBuf->lpPacket->ClearBuffer();
+	//fprintf(stderr, "Send Bytes: %d\n", dwBytesTransferred);
 
 	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	if (!RecvPacket(lpSocketInfo))
+	if (!RecvPacket(lpSocketInfo)) {
+		ReleaseMutex(hMutexObj);
 		return false;
+	}
+
+	ReleaseMutex(hMutexObj);
 
 	return true;
 }
 
-// TCP는 데이터 경계가 없다는 거 기억하고, 그에 대한 처리 구현해야함... 
-// 일단은 중간에 잘리지 않고 받는다고 가정하고 구현하고 있음...
-// Event에 따라 분기처리
-// 1. Request RoomList(by refreshing the room list)
-// 2. Request Create Room (by creating a room)
-// 3. Request Enter Room (by clicking a room in the room list)
-// 4.
-// 그외. Echo
 bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
 {
-	lpSocketInfo->recvBuf->called = false;
-	//if (dwBytesTransferred < 8)
-	//{
-	//	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	//	if (!RecvPacket(lpSocketInfo))
-	//		return false;
-	//}
+
+	//fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
 
 	int type, length;
 	MessageLite* pMessage;
-	// type, length만 역직렬화하는 함수도 만들어야겠다.
-	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
-	
-	bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
-		: HandleWithBody(lpSocketInfo, pMessage, type);
-	if (!rtn)
-		return false;
 
-	if (!RecvPacket(lpSocketInfo))
+	WaitForSingleObject(hMutexObj, INFINITE);
+	lpSocketInfo->recvBuf->called = false;
+	checkCall[(int)lpSocketInfo->socket]--;
+
+	//fprintf(stderr, "[Current Thread %d]=> ", GetCurrentThreadId());
+	//fprintf(stderr, "Socket: %d, Transferred: %d\n", lpSocketInfo->socket, dwBytesTransferred);
+
+	//rtn이 false일 경우, Unpack하기에는 정보가 부족한 것이므로 Re-recv Call
+	//bool rtn = lpSocketInfo->recvBuf->lpPacket->UnpackMessage(dwBytesTransferred, type, length, pMessage);
+	//if (!rtn) {
+	//	rtn = RecvPacket(lpSocketInfo);
+	//	ReleaseMutex(hMutexObj);
+	//	return rtn;
+	//}
+
+	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
+
+	bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type) : HandleWithBody(lpSocketInfo, pMessage, type);
+	if (!rtn) {
+		ReleaseMutex(hMutexObj);
 		return false;
+	}
+
+	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
+	if (!RecvPacket(lpSocketInfo)) {
+		ReleaseMutex(hMutexObj);
+		return false;
+	}
+
+	ReleaseMutex(hMutexObj);
 
 	return true;
 }
@@ -592,17 +626,70 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		{
 			std::cout << "chat message called" << std::endl;
 		}
+		else if (contentType == "START_GAME")
+		{
+			std::cout << "start game called" << std::endl;
+			int roomId = stoi(dataMap["roomId"]);
 
-		delete message;
+			//WaitForSingleObject(hMutexObj, INFINITE);
+			Room*& _room = serverRoomList[roomId];
+			BroadcastMessage(_room, nullptr, START_GAME);
+			//ReleaseMutex(hMutexObj);
+		}
+		else if (contentType == "FIRE_BULLET")
+		{
+			//std::cout << "fire_bullet" << std::endl;
+			string& strRoomId = dataMap["roomId"];
+			string& fromClnt = dataMap["fromClnt"];
+			if (strRoomId == "" || fromClnt == "") return true;
+			int roomId = stoi(strRoomId);
+
+			Data response;
+			(*response.mutable_datamap())["contentType"] = "FIRE_BULLET";
+			(*response.mutable_datamap())["fromClnt"] = fromClnt;
+
+			fprintf(stderr, "[#%d]: Fire Bullet\n", GetCurrentThreadId());
+			Room*& _room = serverRoomList[roomId];
+			BroadcastMessage(_room, &response);
+		}
+		else if (contentType == "BE_SHOT") {
+			//std::cout << "be_shot" << std::endl;
+			//int roomId = stoi(dataMap["roomId"]);
+			//string fromClnt = dataMap["fromClnt"];
+			//string toClnt = dataMap["toClnt"];
+			////string hitType = dataMap["hitType"];
+
+			//Data response;
+			//(*response.mutable_datamap())["contentType"] = "BE_SHOT";
+			//(*response.mutable_datamap())["fromClnt"] = fromClnt;
+			//(*response.mutable_datamap())["toClnt"] = toClnt;
+			////(*response.mutable_datamap)["hitType"] = toClnt;
+
+			////WaitForSingleObject(hMutexObj, INFINITE);
+			//Room*& _room = serverRoomList[roomId];
+			//SocketInfo*& toClntSock = _room->GetSocketUsingName(toClnt);
+
+			//toClntSock->sendBuf->wsaBuf.len =
+			//	toClntSock->sendBuf->lpPacket->PackMessage(-1, &response);
+			////ReleaseMutex(hMutexObj);
+			//if (!SendPacket(toClntSock))
+			//	return false;
+		}
+
+		//delete message;
 		return true;
 	}
 	else
 	{
-		if (type == MessageType::ROOMLIST)
+		if (type == MessageType::PLAY_STATE)
 		{
-
+			//fprintf(stderr, "[#%d]: PlayState\n", GetCurrentThreadId());
+			int roomId = ((PlayState*)message)->roomid();
+			if (serverRoomList.find(roomId) != serverRoomList.end()) {
+				BroadcastMessage(serverRoomList[roomId], message);
+			}
+			//delete message;
 		}
-		// ....
 
 		return true;
 	}
@@ -649,14 +736,21 @@ void ServerManager::SendInitData(SocketInfo* lpSocketInfo) {
 	}
 }
 
-void ServerManager::BroadcastMessage(Room * room, MessageLite * message)
+void ServerManager::BroadcastMessage(Room * room, MessageLite * message, int type)
 {
 	auto begin = room->ClientSocketsBegin();
 	auto end = room->ClientSocketsEnd();
 
 	for (auto itr = begin; itr != end; itr++) {
-		(*itr)->sendBuf->wsaBuf.len =
-			(*itr)->sendBuf->lpPacket->PackMessage(-1, message);
+		if (message != nullptr) {
+			(*itr)->sendBuf->wsaBuf.len =
+				(*itr)->sendBuf->lpPacket->PackMessage(-1, message);
+			//fprintf(stderr, "Length: %d\n", (*itr)->sendBuf->wsaBuf.len);
+		}
+		else if(type != -1) {
+			(*itr)->sendBuf->wsaBuf.len =
+				(*itr)->sendBuf->lpPacket->PackMessage(type, nullptr);
+		}
 		
 		if (!SendPacket(*itr))
 			std::cout << "메시지 전송 실패쓰" << std::endl;

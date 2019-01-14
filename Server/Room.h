@@ -10,17 +10,20 @@ public:
 	Room(RoomInfo* initVal) : roomInfo(initVal) {};
 	~Room();
 
-	void AddClientInfo(SocketInfo* lpSocketInfo);
-	void RemoveClientInfo(SocketInfo* lpSocketInfo);
+	void AddClientInfo(SocketInfo* lpSocketInfo, string& userName);
+	void RemoveClientInfo(SocketInfo* lpSocketInfo, string& userName);
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsBegin();
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
 	void ProcessReadyEvent(int position);
 	int ProcessTeamChangeEvent(int position);
 	bool ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, bool& hostChanged);
 
+	SocketInfo*& GetSocketUsingName(string& userName);
+
 private:
 	RoomInfo* roomInfo;
 	std::forward_list<SocketInfo*> clientSockets;
+	std::unordered_map<std::string, SocketInfo*> clientMap; // <Client_Name, Client_Socket>
 	const int BLUEINDEXSTART = 8;
 
 	Client* GetClient(int position);

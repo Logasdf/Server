@@ -10,11 +10,6 @@ IOInfo::IOInfo()
 }
 
 IOInfo::~IOInfo() {}
-//
-//void IOInfo::BackupReceivedData(int & length)
-//{
-//	
-//}
 
 IOInfo* IOInfo::AllocateIoInfo()
 {
