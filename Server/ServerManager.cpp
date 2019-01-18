@@ -8,42 +8,15 @@
 #include "def.h"
 #include "Packet.h"
 
-void ServerManager::InitRoom(RoomInfo* pRoomInfo, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName)
-{
-	pRoomInfo->set_host(0);
-	pRoomInfo->set_current(1);
-	pRoomInfo->set_limit(limits);
-	pRoomInfo->set_name(roomName);
-	pRoomInfo->set_readycount(0);
-	pRoomInfo->set_roomid(roomIdStatus);
-
-	Client* client = pRoomInfo->add_redteam();
-	client->set_clntid(roomIdStatus);
-	client->set_name(userName);
-	client->set_position(0);
-	client->set_ready(false);
-	EnterCriticalSection(&csForClientLocationTable);
-	clientLocationTable[lpSocketInfo] = client;
-	LeaveCriticalSection(&csForClientLocationTable);
-
-	roomTable.insert(std::make_pair(roomName, roomIdStatus));
-	EnterCriticalSection(&csForRoomList);
-	(*roomList.mutable_rooms())[roomIdStatus] = *pRoomInfo;
-	Room* room = new Room(&((*roomList.mutable_rooms())[roomIdStatus]));
-	LeaveCriticalSection(&csForRoomList);
-	room->AddClientInfo(lpSocketInfo);
-	EnterCriticalSection(&csForServerRoomList);
-	serverRoomList[roomIdStatus++] = room;
-	LeaveCriticalSection(&csForServerRoomList);
-}
-
 ServerManager::ServerManager() 
 { 
+	//freopen("output_log.txt", "w", stdout);
+
 	roomIdStatus = 100;
 	hCompPort = NULL; 
 	servSock = INVALID_SOCKET;
 	hMutexObj = CreateMutex(NULL, FALSE, NULL);
-  hMutexForSend = CreateMutex(NULL, FALSE, NULL);
+	hMutexForSend = CreateMutex(NULL, FALSE, NULL);
 	hMutexForRecv = CreateMutex(NULL, FALSE, NULL);
 	InitializeCriticalSection(&csForRoomList);
 	InitializeCriticalSection(&csForServerRoomList);
@@ -109,6 +82,7 @@ void ServerManager::InitSocket(int port, int prime, int sub)
 	memset(&servAdr, 0, sizeof(servAdr));
 	servAdr.sin_family = AF_INET;
 	servAdr.sin_addr.s_addr = htonl(INADDR_ANY);
+	//servAdr.sin_addr.s_addr = inet_addr(IP);
 	servAdr.sin_port = htons(port);
 
 	if (bind(servSock, (SOCKADDR*)&servAdr, sizeof(servAdr)) == SOCKET_ERROR) {
@@ -194,6 +168,7 @@ void ServerManager::AcceptClient()
 				continue;
 			}
 			SendInitData(lpSocketInfo);
+
 		}
 		__finally
 		{
@@ -262,7 +237,7 @@ void ServerManager::ShutdownThreads()
 
 unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 {
-	ServerManager* self = (ServerManager*)pVoid;
+	ServerManager* self = (ServerManager*)pVoid; 
 	SocketInfo* lpSocketInfo;
 	IOInfo* lpIOInfo;
 	DWORD dwBytesTransferred = 0;
@@ -305,7 +280,7 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			{
 				ErrorHandling("dwBytesTransferred == 0...", WSAGetLastError(), false);
 				fprintf(stderr, "[Log]: Client %d Connection Closed....\n", (HANDLE)lpSocketInfo->socket);
-        //클라이언트 접속이 끊어지는 부분
+				//클라이언트 접속이 끊어지는 부분
 				self->ProcessDisconnection(lpSocketInfo);
 				throw "[Cause]: dwBytesTransferr == 0";
 			}
@@ -313,7 +288,7 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			if (lpIOInfo == lpSocketInfo->recvBuf)
 			{
 				//LOG("Complete Receiving Message!!");
-				if (!(self->HandleRecvEvent(lpSocketInfo, dwBytesTransferred)))
+				if (!(self->HandleRecvEvent(lpSocketInfo, dwBytesTransferred, self)))
 				{
 					throw "[Cause]: RecvEvent Handling Error!!";
 				}
@@ -321,7 +296,7 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			else if (lpIOInfo == lpSocketInfo->sendBuf)
 			{
 				//LOG("Complete Sending Message!!");
-				if (!(self->HandleSendEvent(lpSocketInfo, dwBytesTransferred)))
+				if (!(self->HandleSendEvent(lpSocketInfo, dwBytesTransferred, self)))
 				{
 					throw "[Cause]: SendEvent Handling Error!!";
 				}
@@ -373,12 +348,6 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 	DWORD dwRecvBytes = 0;
 	DWORD dwFlags = 0;
 
-	checkCall[(int)lpSocketInfo->socket]++;
-	//fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
-	if (checkCall[(int)lpSocketInfo->socket] > 1) {
-		fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
-	}
-
 	//WaitForSingleObject(hMutexForRecv, INFINITE);
 	ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
@@ -399,55 +368,51 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 	return true;
 }
 
-bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred)
+bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self)
 {
 	WaitForSingleObject(hMutexObj, INFINITE);
 
 	lpSocketInfo->sendBuf->lpPacket->ClearBuffer();
 	//fprintf(stderr, "Send Bytes: %d\n", dwBytesTransferred);
 
-	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	if (!RecvPacket(lpSocketInfo)) {
-		ReleaseMutex(hMutexObj);
-		return false;
-	}
+	//lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
+	//if (!RecvPacket(lpSocketInfo)) {
+	//	ReleaseMutex(hMutexObj);
+	//	return false;
+	//}
 
 	ReleaseMutex(hMutexObj);
 
 	return true;
 }
 
-bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred)
+bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self)
 {
-
-	//fprintf(stderr, "[Socket #%d]: %d\n", lpSocketInfo->socket, checkCall[(int)lpSocketInfo->socket]);
-
 	int type, length;
 	MessageLite* pMessage;
 
-	WaitForSingleObject(hMutexObj, INFINITE);
-	lpSocketInfo->recvBuf->called = false;
-	checkCall[(int)lpSocketInfo->socket]--;
-
-	//fprintf(stderr, "[Current Thread %d]=> ", GetCurrentThreadId());
-	//fprintf(stderr, "Socket: %d, Transferred: %d\n", lpSocketInfo->socket, dwBytesTransferred);
-
-	//rtn이 false일 경우, Unpack하기에는 정보가 부족한 것이므로 Re-recv Call
-	//bool rtn = lpSocketInfo->recvBuf->lpPacket->UnpackMessage(dwBytesTransferred, type, length, pMessage);
-	//if (!rtn) {
-	//	rtn = RecvPacket(lpSocketInfo);
-	//	ReleaseMutex(hMutexObj);
-	//	return rtn;
-	//}
-
 	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
+	if (type == MessageType::WORLD_STATE) {
+		EnterCriticalSection(&csForServerRoomList);
 
-	bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type) : HandleWithBody(lpSocketInfo, pMessage, type);
-	if (!rtn) {
-		ReleaseMutex(hMutexObj);
-		return false;
+		int roomId = ((WorldState*)pMessage)->roomid();
+		Room*& pRoom = serverRoomList[roomId];
+		PostQueuedCompletionStatus(pRoom->hCompPort, 0, 
+			reinterpret_cast<ULONG_PTR>(pMessage), reinterpret_cast<LPOVERLAPPED>(self));
+
+		LeaveCriticalSection(&csForServerRoomList);
 	}
+	else {
+		bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
+			: HandleWithBody(lpSocketInfo, pMessage, type);
+		if (!rtn) {
+			return false;
+		}
+	}
+	
+	WaitForSingleObject(hMutexObj, INFINITE);
 
+	lpSocketInfo->recvBuf->called = false;
 	lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
 	if (!RecvPacket(lpSocketInfo)) {
 		ReleaseMutex(hMutexObj);
@@ -588,7 +553,7 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 					EnterCriticalSection(&csForServerRoomList);
 					Room* room = serverRoomList[roomIdToEnter];
 					BroadcastMessage(room, clnt); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
-					room->AddClientInfo(lpSocketInfo);
+					room->AddClientInfo(lpSocketInfo, userName);
 					LeaveCriticalSection(&csForServerRoomList);
 				}
 			}
@@ -677,63 +642,45 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			BroadcastMessage(_room, nullptr, START_GAME);
 			//ReleaseMutex(hMutexObj);
 		}
-		else if (contentType == "FIRE_BULLET")
-		{
-			//std::cout << "fire_bullet" << std::endl;
-			string& strRoomId = dataMap["roomId"];
-			string& fromClnt = dataMap["fromClnt"];
-			if (strRoomId == "" || fromClnt == "") return true;
-			int roomId = stoi(strRoomId);
 
-			Data response;
-			(*response.mutable_datamap())["contentType"] = "FIRE_BULLET";
-			(*response.mutable_datamap())["fromClnt"] = fromClnt;
-
-			fprintf(stderr, "[#%d]: Fire Bullet\n", GetCurrentThreadId());
-			Room*& _room = serverRoomList[roomId];
-			BroadcastMessage(_room, &response);
-		}
-		else if (contentType == "BE_SHOT") {
-			//std::cout << "be_shot" << std::endl;
-			//int roomId = stoi(dataMap["roomId"]);
-			//string fromClnt = dataMap["fromClnt"];
-			//string toClnt = dataMap["toClnt"];
-			////string hitType = dataMap["hitType"];
-
-			//Data response;
-			//(*response.mutable_datamap())["contentType"] = "BE_SHOT";
-			//(*response.mutable_datamap())["fromClnt"] = fromClnt;
-			//(*response.mutable_datamap())["toClnt"] = toClnt;
-			////(*response.mutable_datamap)["hitType"] = toClnt;
-
-			////WaitForSingleObject(hMutexObj, INFINITE);
-			//Room*& _room = serverRoomList[roomId];
-			//SocketInfo*& toClntSock = _room->GetSocketUsingName(toClnt);
-
-			//toClntSock->sendBuf->wsaBuf.len =
-			//	toClntSock->sendBuf->lpPacket->PackMessage(-1, &response);
-			////ReleaseMutex(hMutexObj);
-			//if (!SendPacket(toClntSock))
-			//	return false;
-		}
-
-		//delete message;
+		delete message;
 		return true;
 	}
-	else
-	{
-		if (type == MessageType::PLAY_STATE)
-		{
-			//fprintf(stderr, "[#%d]: PlayState\n", GetCurrentThreadId());
-			int roomId = ((PlayState*)message)->roomid();
-			if (serverRoomList.find(roomId) != serverRoomList.end()) {
-				BroadcastMessage(serverRoomList[roomId], message);
-			}
-			//delete message;
-		}
+}
 
-		return true;
-	}
+void ServerManager::InitRoom(RoomInfo* pRoomInfo, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName)
+{
+	pRoomInfo->set_host(0);
+	pRoomInfo->set_current(1);
+	pRoomInfo->set_limit(limits);
+	pRoomInfo->set_name(roomName);
+	pRoomInfo->set_readycount(0);
+	pRoomInfo->set_roomid(roomIdStatus);
+
+	Client* client = pRoomInfo->add_redteam();
+	client->set_clntid(roomIdStatus);
+	client->set_name(userName);
+	client->set_position(0);
+	client->set_ready(false);
+
+	EnterCriticalSection(&csForClientLocationTable);
+	clientLocationTable[lpSocketInfo] = client;
+	LeaveCriticalSection(&csForClientLocationTable);
+
+	roomTable.insert(std::make_pair(roomName, roomIdStatus));
+
+	EnterCriticalSection(&csForRoomList);
+	(*roomList.mutable_rooms())[roomIdStatus] = *pRoomInfo;
+	Room* room = new Room(&((*roomList.mutable_rooms())[roomIdStatus]));
+	room->InitCompletionPort();
+	room->CreateThreadPool();
+	LeaveCriticalSection(&csForRoomList);
+
+	room->AddClientInfo(lpSocketInfo, userName);
+
+	EnterCriticalSection(&csForServerRoomList);
+	serverRoomList[roomIdStatus++] = room;
+	LeaveCriticalSection(&csForServerRoomList);
 }
 
 void ServerManager::SendInitData(SocketInfo* lpSocketInfo) {
@@ -781,6 +728,9 @@ void ServerManager::SendInitData(SocketInfo* lpSocketInfo) {
 	EnterCriticalSection(&csForClientLocationTable);
 	clientLocationTable.insert(std::make_pair(lpSocketInfo, nullptr));
 	LeaveCriticalSection(&csForClientLocationTable);
+
+	// 초기 Recv Call
+	RecvPacket(lpSocketInfo);
 }
 
 void ServerManager::BroadcastMessage(Room * room, MessageLite * message, int type)
@@ -800,7 +750,7 @@ void ServerManager::BroadcastMessage(Room * room, MessageLite * message, int typ
 		}
 		
 		if (!SendPacket(*itr))
-			std::cout << "메시지 전송 실패쓰" << std::endl;
+			std::cout << "메시지 전송 실패쓰\n";
 	}
 }
 

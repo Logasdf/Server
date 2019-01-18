@@ -19,6 +19,9 @@ public:
 	void Start(int port=PORT);
 	void Stop();
 
+	bool SendPacket(SocketInfo* lpSocketInfo);
+	bool RecvPacket(SocketInfo* lpSocketInfo);
+
 private:
 	static unsigned __stdcall ThreadMain(void* pVoid);
 
@@ -29,10 +32,9 @@ private:
 	void CloseClient(SocketInfo* lpSocketInfo, bool graceful = false);
 	void CreateThreadPool(int numOfThreads = 0);
 	void ShutdownThreads();
-	bool SendPacket(SocketInfo* lpSocketInfo);
-	bool RecvPacket(SocketInfo* lpSocketInfo);
-	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
-	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
+
+	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self);
+	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self);
 	bool HandleWithoutBody(SocketInfo* lpSocketInfo, int& type);
 	bool HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* message, int& type);
 
@@ -54,10 +56,15 @@ private:
 
 	int roomIdStatus;
 	RoomList roomList;
+	// <RoomId, RoomContext> => RoomId를 이용해 RoomConetxt에 Get
 	std::unordered_map<int, Room*> serverRoomList;
+	// <RoomName, RoomId> => RoomName을 이용해 RoomId Get
 	std::unordered_map<string, int> roomTable;
+	// <SocketInfo, Client> => Socket 정보를 이용해 Client Get
 	std::unordered_map<SocketInfo*, Client*> clientLocationTable;
-  std::unordered_map<int, int> checkCall;
+
+	// Just For Test
+	std::unordered_map<int, int> checkCall;
   
 	CRITICAL_SECTION csForRoomList;
 	CRITICAL_SECTION csForServerRoomList;

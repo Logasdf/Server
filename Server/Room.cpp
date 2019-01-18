@@ -1,15 +1,24 @@
 #include "Room.h"
+#include <process.h>
+#include "def.h"
+#include "ServerManager.h"
+
+
 
 Room::Room(RoomInfo * initVal) : roomInfo(initVal)
 {
 	InitializeCriticalSection(&csForClientSockets);
 	InitializeCriticalSection(&csForRoomInfo);
+	InitializeCriticalSection(&csForBroadcast);
 }
 
 Room::~Room()
 {
 	DeleteCriticalSection(&csForClientSockets);
 	DeleteCriticalSection(&csForRoomInfo);
+	DeleteCriticalSection(&csForBroadcast);
+	CloseHandle(hCompPort);
+
 	std::cout << "Room 객체가 삭제되었습니다." << std::endl;
 }
 
@@ -137,7 +146,75 @@ SocketInfo*& Room::GetSocketUsingName(string & userName)
 	return clientMap[userName];
 }
 
-Client* Room::GetClient(int position) 
+void Room::InitCompletionPort(int maxNumberOfThreads)
+{
+	hCompPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, maxNumberOfThreads);
+	if (hCompPort == NULL) {
+		ErrorHandling(WSAGetLastError());
+		return;
+	}
+}
+
+void Room::CreateThreadPool(int numOfThreads)
+{
+	for (int i = 0; i < numOfThreads; ++i) {
+		DWORD dwThreadId = 0;
+		HANDLE hThread = BEGINTHREADEX(NULL, 0, Room::ThreadMain, this, 0, &dwThreadId);
+		CloseHandle(hThread);
+	}
+}
+
+unsigned __stdcall Room::ThreadMain(void * pVoid)
+{
+	Room* self = (Room*)pVoid;
+	MessageLite* pMessage;
+	ServerManager* pServerManager;
+	DWORD dwBytesTransferred = 0;
+
+	while (true)
+	{
+		pMessage = NULL;
+		pServerManager = NULL;
+
+		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
+			reinterpret_cast<ULONG_PTR*>(&pMessage), 
+			reinterpret_cast<LPOVERLAPPED*>(&pServerManager), INFINITE);
+		if (!rtn) {
+			ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+			continue;
+		}
+
+		if (pMessage == NULL) {
+			ErrorHandling("Message is NULL....", false);
+			continue;
+		}
+
+		if (pServerManager == NULL) {
+			ErrorHandling("ServerManager is NULL", false);
+			continue;
+		}
+
+		// Broadcast
+
+		EnterCriticalSection(&self->csForBroadcast);
+		auto begin = self->ClientSocketsBegin();
+		auto end = self->ClientSocketsEnd();
+		for (auto itr = begin; itr != end; itr++) {
+			if (pMessage != nullptr) {
+				(*itr)->sendBuf->wsaBuf.len =
+					(*itr)->sendBuf->lpPacket->PackMessage(-1, pMessage);
+			}
+
+			if (!pServerManager->SendPacket(*itr))
+				std::cout << "메시지 전송 실패쓰\n";
+		}
+		LeaveCriticalSection(&self->csForBroadcast);
+	}
+
+	return 0;
+}
+
+Client* Room::GetClient(int position)
 {
 	return position < BLUEINDEXSTART ? 
 		roomInfo->mutable_redteam(position) : roomInfo->mutable_blueteam(position % BLUEINDEXSTART);

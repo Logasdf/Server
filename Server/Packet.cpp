@@ -8,7 +8,8 @@ Packet::TypeMap Packet::typeMap = {
 	{typeid(Client), MessageType::CLIENT},
 	{typeid(PlayState), MessageType::PLAY_STATE},
 	{typeid(TransformProto), MessageType::TRANSFORM},
-	{typeid(Vector3Proto), MessageType::VECTOR_3}
+	{typeid(Vector3Proto), MessageType::VECTOR_3},
+	{typeid(WorldState), MessageType::WORLD_STATE}
 };
 
 Packet::InvTypeMap Packet::invTypeMap = {
@@ -19,6 +20,7 @@ Packet::InvTypeMap Packet::invTypeMap = {
 	{MessageType::PLAY_STATE, typeid(PlayState)},
 	{MessageType::TRANSFORM, typeid(TransformProto)},
 	{MessageType::VECTOR_3, typeid(Vector3Proto)},
+	{MessageType::WORLD_STATE, typeid(WorldState)}
 };
 
 Packet::Packet() 
@@ -247,6 +249,14 @@ void Packet::Deserialize(int& type, CodedInputStream*& cis, MessageLite*& messag
 	{
 		message = new Vector3Proto();
 	}
+	else if (type == MessageType::WORLD_STATE)
+	{
+		message = new WorldState();
+	}
+	else {
+		return;
+	}
+
 	message->ParseFromCodedStream(cis);
 }
 

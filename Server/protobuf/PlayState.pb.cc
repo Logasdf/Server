@@ -39,6 +39,11 @@ class PlayStateDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<PlayState>
       _instance;
 } _PlayState_default_instance_;
+class WorldStateDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<WorldState>
+      _instance;
+} _WorldState_default_instance_;
 }  // namespace state
 namespace protobuf_PlayState_2eproto {
 static void InitDefaultsVector3Proto() {
@@ -85,13 +90,29 @@ static void InitDefaultsPlayState() {
     {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsPlayState}, {
       &protobuf_PlayState_2eproto::scc_info_TransformProto.base,}};
 
+static void InitDefaultsWorldState() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::state::_WorldState_default_instance_;
+    new (ptr) ::state::WorldState();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::state::WorldState::InitAsDefaultInstance();
+}
+
+::google::protobuf::internal::SCCInfo<1> scc_info_WorldState =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsWorldState}, {
+      &protobuf_PlayState_2eproto::scc_info_TransformProto.base,}};
+
 void InitDefaults() {
   ::google::protobuf::internal::InitSCC(&scc_info_Vector3Proto.base);
   ::google::protobuf::internal::InitSCC(&scc_info_TransformProto.base);
   ::google::protobuf::internal::InitSCC(&scc_info_PlayState.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_WorldState.base);
 }
 
-::google::protobuf::Metadata file_level_metadata[3];
+::google::protobuf::Metadata file_level_metadata[4];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -122,17 +143,28 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::PlayState, deathcount_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::PlayState, roomid_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::PlayState, clntname_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::WorldState, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::WorldState, roomid_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::WorldState, clntname_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::WorldState, transform_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::state::WorldState, fired_),
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::state::Vector3Proto)},
   { 8, -1, sizeof(::state::TransformProto)},
   { 16, -1, sizeof(::state::PlayState)},
+  { 28, -1, sizeof(::state::WorldState)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::state::_Vector3Proto_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::state::_TransformProto_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::state::_PlayState_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::state::_WorldState_default_instance_),
 };
 
 void protobuf_AssignDescriptors() {
@@ -150,7 +182,7 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 3);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 4);
 }
 
 void AddDescriptorsImpl() {
@@ -165,11 +197,13 @@ void AddDescriptorsImpl() {
       "\025.state.TransformProto\022\021\n\tanimState\030\002 \001("
       "\005\022\016\n\006health\030\003 \001(\005\022\021\n\tkillCount\030\004 \001(\005\022\022\n\n"
       "deathCount\030\005 \001(\005\022\016\n\006roomId\030\006 \001(\005\022\020\n\010clnt"
-      "Name\030\007 \001(\tB\030\252\002\025Google.Protobuf.Stateb\006pr"
-      "oto3"
+      "Name\030\007 \001(\t\"g\n\nWorldState\022\016\n\006roomId\030\001 \001(\005"
+      "\022\020\n\010clntName\030\002 \001(\t\022(\n\ttransform\030\003 \001(\0132\025."
+      "state.TransformProto\022\r\n\005fired\030\004 \001(\010B\030\252\002\025"
+      "Google.Protobuf.Stateb\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 404);
+      descriptor, 509);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "PlayState.proto", &protobuf_RegisterTypes);
 }
@@ -1296,6 +1330,376 @@ void PlayState::InternalSwap(PlayState* other) {
 }
 
 
+// ===================================================================
+
+void WorldState::InitAsDefaultInstance() {
+  ::state::_WorldState_default_instance_._instance.get_mutable()->transform_ = const_cast< ::state::TransformProto*>(
+      ::state::TransformProto::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int WorldState::kRoomIdFieldNumber;
+const int WorldState::kClntNameFieldNumber;
+const int WorldState::kTransformFieldNumber;
+const int WorldState::kFiredFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+WorldState::WorldState()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_PlayState_2eproto::scc_info_WorldState.base);
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:state.WorldState)
+}
+WorldState::WorldState(const WorldState& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  clntname_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.clntname().size() > 0) {
+    clntname_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.clntname_);
+  }
+  if (from.has_transform()) {
+    transform_ = new ::state::TransformProto(*from.transform_);
+  } else {
+    transform_ = NULL;
+  }
+  ::memcpy(&roomid_, &from.roomid_,
+    static_cast<size_t>(reinterpret_cast<char*>(&fired_) -
+    reinterpret_cast<char*>(&roomid_)) + sizeof(fired_));
+  // @@protoc_insertion_point(copy_constructor:state.WorldState)
+}
+
+void WorldState::SharedCtor() {
+  clntname_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&transform_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&fired_) -
+      reinterpret_cast<char*>(&transform_)) + sizeof(fired_));
+}
+
+WorldState::~WorldState() {
+  // @@protoc_insertion_point(destructor:state.WorldState)
+  SharedDtor();
+}
+
+void WorldState::SharedDtor() {
+  clntname_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete transform_;
+}
+
+void WorldState::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const ::google::protobuf::Descriptor* WorldState::descriptor() {
+  ::protobuf_PlayState_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_PlayState_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const WorldState& WorldState::default_instance() {
+  ::google::protobuf::internal::InitSCC(&protobuf_PlayState_2eproto::scc_info_WorldState.base);
+  return *internal_default_instance();
+}
+
+
+void WorldState::Clear() {
+// @@protoc_insertion_point(message_clear_start:state.WorldState)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  clntname_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && transform_ != NULL) {
+    delete transform_;
+  }
+  transform_ = NULL;
+  ::memset(&roomid_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&fired_) -
+      reinterpret_cast<char*>(&roomid_)) + sizeof(fired_));
+  _internal_metadata_.Clear();
+}
+
+bool WorldState::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:state.WorldState)
+  for (;;) {
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // int32 roomId = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &roomid_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // string clntName = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_clntname()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->clntname().data(), static_cast<int>(this->clntname().length()),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "state.WorldState.clntName"));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // .state.TransformProto transform = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_transform()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // bool fired = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(32u /* 32 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &fired_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:state.WorldState)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:state.WorldState)
+  return false;
+#undef DO_
+}
+
+void WorldState::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:state.WorldState)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // int32 roomId = 1;
+  if (this->roomid() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->roomid(), output);
+  }
+
+  // string clntName = 2;
+  if (this->clntname().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->clntname().data(), static_cast<int>(this->clntname().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "state.WorldState.clntName");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      2, this->clntname(), output);
+  }
+
+  // .state.TransformProto transform = 3;
+  if (this->has_transform()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      3, this->_internal_transform(), output);
+  }
+
+  // bool fired = 4;
+  if (this->fired() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(4, this->fired(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:state.WorldState)
+}
+
+::google::protobuf::uint8* WorldState::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:state.WorldState)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // int32 roomId = 1;
+  if (this->roomid() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->roomid(), target);
+  }
+
+  // string clntName = 2;
+  if (this->clntname().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->clntname().data(), static_cast<int>(this->clntname().length()),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "state.WorldState.clntName");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->clntname(), target);
+  }
+
+  // .state.TransformProto transform = 3;
+  if (this->has_transform()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        3, this->_internal_transform(), deterministic, target);
+  }
+
+  // bool fired = 4;
+  if (this->fired() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(4, this->fired(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:state.WorldState)
+  return target;
+}
+
+size_t WorldState::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:state.WorldState)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // string clntName = 2;
+  if (this->clntname().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->clntname());
+  }
+
+  // .state.TransformProto transform = 3;
+  if (this->has_transform()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *transform_);
+  }
+
+  // int32 roomId = 1;
+  if (this->roomid() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->roomid());
+  }
+
+  // bool fired = 4;
+  if (this->fired() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void WorldState::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:state.WorldState)
+  GOOGLE_DCHECK_NE(&from, this);
+  const WorldState* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const WorldState>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:state.WorldState)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:state.WorldState)
+    MergeFrom(*source);
+  }
+}
+
+void WorldState::MergeFrom(const WorldState& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:state.WorldState)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.clntname().size() > 0) {
+
+    clntname_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.clntname_);
+  }
+  if (from.has_transform()) {
+    mutable_transform()->::state::TransformProto::MergeFrom(from.transform());
+  }
+  if (from.roomid() != 0) {
+    set_roomid(from.roomid());
+  }
+  if (from.fired() != 0) {
+    set_fired(from.fired());
+  }
+}
+
+void WorldState::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:state.WorldState)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void WorldState::CopyFrom(const WorldState& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:state.WorldState)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool WorldState::IsInitialized() const {
+  return true;
+}
+
+void WorldState::Swap(WorldState* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void WorldState::InternalSwap(WorldState* other) {
+  using std::swap;
+  clntname_.Swap(&other->clntname_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  swap(transform_, other->transform_);
+  swap(roomid_, other->roomid_);
+  swap(fired_, other->fired_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+}
+
+::google::protobuf::Metadata WorldState::GetMetadata() const {
+  protobuf_PlayState_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_PlayState_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace state
 namespace google {
@@ -1308,6 +1712,9 @@ template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::state::TransformProto* Arena::Cr
 }
 template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::state::PlayState* Arena::CreateMaybeMessage< ::state::PlayState >(Arena* arena) {
   return Arena::CreateInternal< ::state::PlayState >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::state::WorldState* Arena::CreateMaybeMessage< ::state::WorldState >(Arena* arena) {
+  return Arena::CreateInternal< ::state::WorldState >(arena);
 }
 }  // namespace protobuf
 }  // namespace google

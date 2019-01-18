@@ -18,7 +18,7 @@ typedef unsigned (__stdcall *PTHREAD_START) (void *);
 #define KILL_THREAD 9
 
 #define PORT 9910
-#define IP "127.0.0.1"
+#define IP "10.10.10.10"
 
 enum MessageType {
 	ACCEPT = 0, 
@@ -36,5 +36,6 @@ enum MessageType {
 	CLIENT,
 	PLAY_STATE,
 	TRANSFORM,
-	VECTOR_3
+	VECTOR_3,
+	WORLD_STATE
 };

@@ -24,3 +24,11 @@ message PlayState {
     int32 roomId = 6;
     string clntName = 7;
 }
+
+message WorldState {
+    int32 roomId = 1;
+    string clntName = 2;
+
+    TransformProto transform = 3;
+    bool fired = 4;
+}
