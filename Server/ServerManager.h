@@ -13,19 +13,27 @@
 
 class ServerManager {
 public:
-	ServerManager();
-	~ServerManager();
-
 	void Start(int port=PORT);
 	void Stop();
 
 	bool SendPacket(SocketInfo* lpSocketInfo);
 	bool RecvPacket(SocketInfo* lpSocketInfo);
 
+	static ServerManager& getInstance() {
+		if (self == nullptr) {
+			self = new ServerManager();
+		}
+		return *self;
+	}
+
 private:
+	static ServerManager* self;
 	static unsigned __stdcall ThreadMain(void* pVoid);
 
 private:
+	ServerManager();
+	~ServerManager();
+
 	void InitSocket(int port, int prime = 2, int sub = 2);
 	void InitCompletionPort(int maxNumberOfThreads = 0);
 	void AcceptClient();

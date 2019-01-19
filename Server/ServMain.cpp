@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 	//	exit(1);
 	//}
 
-	ServerManager servManager;
+	ServerManager& servManager = ServerManager::getInstance();
 	servManager.Start();
 
 	return 0;

@@ -1,9 +1,7 @@
-#include "Room.h"
 #include <process.h>
 #include "def.h"
+#include "Room.h"
 #include "ServerManager.h"
-
-
 
 Room::Room(RoomInfo * initVal) : roomInfo(initVal)
 {
@@ -168,19 +166,25 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 {
 	Room* self = (Room*)pVoid;
 	MessageLite* pMessage;
-	ServerManager* pServerManager;
+	LPOVERLAPPED lpOverlapped;
+
 	DWORD dwBytesTransferred = 0;
+	ServerManager& servManager = ServerManager::getInstance();
 
 	while (true)
 	{
 		pMessage = NULL;
-		pServerManager = NULL;
+		lpOverlapped = NULL;
 
 		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
-			reinterpret_cast<ULONG_PTR*>(&pMessage), 
-			reinterpret_cast<LPOVERLAPPED*>(&pServerManager), INFINITE);
+			reinterpret_cast<ULONG_PTR*>(&pMessage), &lpOverlapped, INFINITE);
 		if (!rtn) {
-			ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+			if (lpOverlapped != NULL) {
+				printf("lpOverlapped is not NULL!: %d\n", GetLastError());
+			}
+			else {
+				printf("lpOverlapped is NULL!: %d\n", GetLastError());
+			}
 			continue;
 		}
 
@@ -189,25 +193,22 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 			continue;
 		}
 
-		if (pServerManager == NULL) {
-			ErrorHandling("ServerManager is NULL", false);
-			continue;
-		}
-
 		// Broadcast
-
 		EnterCriticalSection(&self->csForBroadcast);
+
 		auto begin = self->ClientSocketsBegin();
 		auto end = self->ClientSocketsEnd();
+		printf("Broadcast!!\n");
 		for (auto itr = begin; itr != end; itr++) {
 			if (pMessage != nullptr) {
 				(*itr)->sendBuf->wsaBuf.len =
 					(*itr)->sendBuf->lpPacket->PackMessage(-1, pMessage);
 			}
 
-			if (!pServerManager->SendPacket(*itr))
+			if (!servManager.SendPacket(*itr))
 				std::cout << "메시지 전송 실패쓰\n";
 		}
+
 		LeaveCriticalSection(&self->csForBroadcast);
 	}
 

@@ -8,6 +8,8 @@
 #include "def.h"
 #include "Packet.h"
 
+ServerManager* ServerManager::self = nullptr;
+
 ServerManager::ServerManager() 
 { 
 	//freopen("output_log.txt", "w", stdout);
@@ -140,18 +142,18 @@ void ServerManager::AcceptClient()
 
 			printf("Client %d (%s::%d) connected\n", clntSock, inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
 
-			int zero = 0;
-			if (setsockopt(clntSock, SOL_SOCKET, SO_RCVBUF, (const char*)&zero, sizeof(int)) == SOCKET_ERROR)
-			{
-				ErrorHandling(WSAGetLastError(), false);
-				continue;
-			}
-			zero = 0;
-			if (setsockopt(clntSock, SOL_SOCKET, SO_SNDBUF, (const char*)&zero, sizeof(int)) == SOCKET_ERROR)
-			{
-				ErrorHandling(WSAGetLastError(), false);
-				continue;
-			}
+			//int zero = 0;
+			//if (setsockopt(clntSock, SOL_SOCKET, SO_RCVBUF, (const char*)&zero, sizeof(int)) == SOCKET_ERROR)
+			//{
+			//	ErrorHandling(WSAGetLastError(), false);
+			//	continue;
+			//}
+			//zero = 0;
+			//if (setsockopt(clntSock, SOL_SOCKET, SO_SNDBUF, (const char*)&zero, sizeof(int)) == SOCKET_ERROR)
+			//{
+			//	ErrorHandling(WSAGetLastError(), false);
+			//	continue;
+			//}
 
 			// socket context 생성(Completion Key로 넘김)
 			lpSocketInfo = SocketInfo::AllocateSocketInfo(clntSock);
@@ -254,14 +256,14 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			if (((DWORD)lpSocketInfo) == KILL_THREAD) break;
 
 			if (lpIOInfo == NULL) {
-				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+				ErrorHandling("#1 Getting IO Information Failed...", WSAGetLastError(), false);
 				continue;
 			}
 		}
 		else
 		{
 			if (lpIOInfo == NULL) {
-				ErrorHandling("Getting IO Information Failed...", WSAGetLastError(), false);
+				ErrorHandling("#2 Getting IO Information Failed...", WSAGetLastError(), false);
 			}
 			else
 			{
@@ -398,7 +400,7 @@ bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTrans
 		int roomId = ((WorldState*)pMessage)->roomid();
 		Room*& pRoom = serverRoomList[roomId];
 		PostQueuedCompletionStatus(pRoom->hCompPort, 0, 
-			reinterpret_cast<ULONG_PTR>(pMessage), reinterpret_cast<LPOVERLAPPED>(self));
+			reinterpret_cast<ULONG_PTR>(pMessage), NULL);
 
 		LeaveCriticalSection(&csForServerRoomList);
 	}
