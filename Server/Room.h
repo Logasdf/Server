@@ -15,9 +15,9 @@ public:
 	void RemoveClientInfo(SocketInfo* lpSocketInfo, string& userName);
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsBegin();
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
-	void ProcessReadyEvent(int position);
-	int ProcessTeamChangeEvent(int position);
-	bool ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, bool& hostChanged);
+	void ProcessReadyEvent(Client*& client);
+	Client* ProcessTeamChangeEvent(Client*& position);
+	bool ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo);
 
 	SocketInfo*& GetSocketUsingName(string& userName);
 
@@ -43,7 +43,8 @@ private:
 	static unsigned __stdcall ThreadMain(void* pVoid);
 
 	Client* GetClient(int position);
-	void MoveClientToOppositeTeam(int prev_pos, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo);
+	Client* MoveClientToOppositeTeam(Client*& affectedClient, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo);
+	void AdjustClientsIndexes(int basePos); // 누가 나가거나, 팀을 바꿨을 때 인덱스 변경되는 클라들 포지션 조정하는 함수
 	void ChangeGameroomHost(bool isOnRedteam);
 };
 

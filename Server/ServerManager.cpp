@@ -444,6 +444,64 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 		if (!SendPacket(lpSocketInfo))
 			return false;
 	}
+	else if (type == MessageType::SEEK_MYPOSITION)
+	{
+		Data response;
+		(*response.mutable_datamap())["contentType"] = "CLIENT_POSITION";
+		(*response.mutable_datamap())["position"] = std::to_string(clientLocationTable[lpSocketInfo]->position());
+		lpSocketInfo->sendBuf->wsaBuf.len = lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+		if (!SendPacket(lpSocketInfo))
+			return false;
+	}
+	else
+	{
+		Client* messageFrom = clientLocationTable[lpSocketInfo];
+		int roomId = messageFrom->clntid();
+		EnterCriticalSection(&csForServerRoomList);
+		Room* pRoom = serverRoomList[roomId];
+		RoomInfo& rInfo = (*roomList.mutable_rooms())[roomId];
+		switch (type)
+		{
+			case MessageType::READY_EVENT:
+				pRoom->ProcessReadyEvent(messageFrom);
+				break;
+			case MessageType::TEAM_CHANGE:
+			{
+				std::cout << "team change called" << std::endl;
+				Client* newPosition = pRoom->ProcessTeamChangeEvent(messageFrom);
+				if (newPosition != nullptr)
+				{
+					clientLocationTable[lpSocketInfo] = newPosition;
+				}
+				break;
+			}
+			case MessageType::LEAVE_GAMEROOM:
+				std::cout << "leave gameroom called" << std::endl;
+
+				bool isClosed = pRoom->ProcessLeaveGameroomEvent(messageFrom->position(), lpSocketInfo);
+				EnterCriticalSection(&csForClientLocationTable);
+				clientLocationTable[lpSocketInfo] = nullptr;
+				LeaveCriticalSection(&csForClientLocationTable);
+
+				if (isClosed)
+				{ //방이 사라진 경우, 리소스 정리해야함
+					serverRoomList.erase(roomId); // Room* 서버 방 리스트에서 제거 (해제 아님)
+					EnterCriticalSection(&csForRoomTable);
+					roomTable.erase(rInfo.name()); // Map<방이름, roomId> 에서 제거
+					LeaveCriticalSection(&csForRoomTable);
+					EnterCriticalSection(&csForRoomList);
+					(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
+					LeaveCriticalSection(&csForRoomList);
+					delete pRoom; // Room* 해제 여기서
+					LeaveCriticalSection(&csForServerRoomList);
+					return true;
+				}
+				break;
+		}
+		BroadcastMessage(pRoom, &rInfo);
+		LeaveCriticalSection(&csForServerRoomList);
+	}
 
 	return true;
 }
@@ -554,81 +612,11 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 
 					EnterCriticalSection(&csForServerRoomList);
 					Room* room = serverRoomList[roomIdToEnter];
-					BroadcastMessage(room, clnt); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
+					BroadcastMessage(room, &roomInfo); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
 					room->AddClientInfo(lpSocketInfo, userName);
 					LeaveCriticalSection(&csForServerRoomList);
 				}
 			}
-		}
-		else if (contentType == "READY_EVENT") 
-		{
-			int roomId = stoi(dataMap["roomId"]);
-			int position = stoi(dataMap["position"]);
-			EnterCriticalSection(&csForServerRoomList);
-			Room* room = serverRoomList[roomId];
-			room->ProcessReadyEvent(position);
-			BroadcastMessage(room, message);
-			LeaveCriticalSection(&csForServerRoomList);
-		}
-		else if (contentType == "TEAM_CHANGE") 
-		{
-			std::cout << "team change called" << std::endl;
-			int roomId = stoi(dataMap["roomId"]);
-			int position = stoi(dataMap["prev_position"]);
-			EnterCriticalSection(&csForServerRoomList);
-			Room* room = serverRoomList[roomId];
-			int newPosition = room->ProcessTeamChangeEvent(position);
-			if (newPosition == -1)
-			{
-				//이동이 불가능 할 경우. 아무것도 보내지않으면 아무행동도 일어나지 않을 것이기에 이대로 놔둬도 괜춘쓰
-			}
-			// 수정이 가능하다면 객체를 새로 만들 필요가 없어질듯.
-			Data data;
-			(*data.mutable_datamap())["contentType"] = dataMap["contentType"];
-			(*data.mutable_datamap())["prev_position"] = dataMap["prev_position"];
-			(*data.mutable_datamap())["next_position"] = std::to_string(newPosition);
-			BroadcastMessage(room, &data);
-			LeaveCriticalSection(&csForServerRoomList);
-		}
-		else if (contentType == "LEAVE_GAMEROOM") 
-		{
-			std::cout << "leave gameroom called" << std::endl;
-			int roomId = stoi(dataMap["roomId"]);
-			int position = stoi(dataMap["position"]);
-			EnterCriticalSection(&csForServerRoomList);
-			Room* room = serverRoomList[roomId];
-			
-			BroadcastMessage(room, message);
-
-			bool hostChanged = false;
-			bool isClosed =  room->ProcessLeaveGameroomEvent(position, lpSocketInfo, hostChanged);
-			EnterCriticalSection(&csForClientLocationTable);
-			clientLocationTable[lpSocketInfo] = nullptr;
-			LeaveCriticalSection(&csForClientLocationTable);
-
-			RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
-			if (isClosed)
-			{ //방이 사라진 경우, 리소스 정리해야함
-				serverRoomList.erase(roomId); // Room* 서버 방 리스트에서 제거 (해제 아님)
-				EnterCriticalSection(&csForRoomTable);
-				roomTable.erase(roomInfo.name()); // Map<방이름, roomId> 에서 제거
-				LeaveCriticalSection(&csForRoomTable);
-				EnterCriticalSection(&csForRoomList);
-				(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
-				LeaveCriticalSection(&csForRoomList);
-				delete room; // Room* 해제 여기서
-			}
-			else
-			{
-				if (hostChanged)
-				{ //방장이 바뀐 경우. 바뀐 방장의 position 을 보내주면 된다.
-					Data data;
-					(*data.mutable_datamap())["contentType"] = "HOST_CHANGED";
-					(*data.mutable_datamap())["newHost"] = std::to_string(roomInfo.host());
-					BroadcastMessage(room, &data);
-				}
-			}
-			LeaveCriticalSection(&csForServerRoomList);
 		}
 		else if (contentType == "CHAT_MESSAGE") 
 		{
@@ -766,15 +754,11 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 		EnterCriticalSection(&csForServerRoomList);
 		Room* currentLocation = serverRoomList[roomId];
 
-		Data message;
-		(*message.mutable_datamap())["contentType"] = "LEAVE_GAMEROOM";
-		(*message.mutable_datamap())["position"] = std::to_string(clientInstance->position());
-
-		bool hostChanged = false;
-		bool isClosed = currentLocation->ProcessLeaveGameroomEvent(clientInstance->position(), lpSocketInfo, hostChanged);
-		BroadcastMessage(currentLocation, &message);
-
 		RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
+		bool isClosed = currentLocation->ProcessLeaveGameroomEvent(clientInstance->position(), lpSocketInfo);
+		BroadcastMessage(currentLocation, &roomInfo);
+
+	
 		if (isClosed)
 		{ //방이 사라진 경우, 리소스 정리해야함
 			serverRoomList.erase(roomId); // Room* 서버 방 리스트에서 제거 (해제 아님)
@@ -786,19 +770,9 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 			LeaveCriticalSection(&csForRoomList);
 			delete currentLocation; // Room* 해제 여기서
 		}
-		else
-		{
-			if (hostChanged)
-			{ //방장이 바뀐 경우. 바뀐 방장의 position 을 보내주면 된다.
-				Data data;
-				(*data.mutable_datamap())["contentType"] = "HOST_CHANGED";
-				(*data.mutable_datamap())["newHost"] = std::to_string(roomInfo.host());
-				BroadcastMessage(currentLocation, &data);
-			}
-		}
+
 		LeaveCriticalSection(&csForServerRoomList);
 	}
-
 	clientLocationTable.erase(lpSocketInfo);
 	LeaveCriticalSection(&csForClientLocationTable);
 }

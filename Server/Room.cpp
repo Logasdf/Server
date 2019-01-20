@@ -26,7 +26,6 @@ void Room::AddClientInfo(SocketInfo * lpSocketInfo, string& userName)
 	clientSockets.push_front(lpSocketInfo);
 	LeaveCriticalSection(&csForClientSockets);
 	clientMap[userName] = lpSocketInfo;
-	std::cout << "클라이언트정보 추가 완료" << std::endl;
 }
 
 void Room::RemoveClientInfo(SocketInfo * lpSocketInfo, string& userName)
@@ -37,7 +36,6 @@ void Room::RemoveClientInfo(SocketInfo * lpSocketInfo, string& userName)
 	if (clientMap.find(userName) != clientMap.end()) {
 		clientMap.erase(userName);
 	}
-	std::cout << "클라이언트정보 삭제 완료" << std::endl;
 }
 
 std::forward_list<SocketInfo*>::const_iterator Room::ClientSocketsBegin()
@@ -56,10 +54,9 @@ std::forward_list<SocketInfo*>::const_iterator Room::ClientSocketsEnd()
 	return itr;
 }
 
-void Room::ProcessReadyEvent(int position)
+void Room::ProcessReadyEvent(Client*& affectedClient)
 {
 	EnterCriticalSection(&csForRoomInfo);
-	Client* affectedClient = GetClient(position);
 	bool toReady = !affectedClient->ready() ? true : false;
 	if (toReady) 
 	{
@@ -69,50 +66,52 @@ void Room::ProcessReadyEvent(int position)
 	{
 		roomInfo->set_readycount(roomInfo->readycount() - 1);
 	}	
-	std::cout << "현재 방의 레디중인 유저 수 : " << roomInfo->readycount() << std::endl;
-	affectedClient->set_ready(!affectedClient->ready());
+	affectedClient->set_ready(toReady);
 	LeaveCriticalSection(&csForRoomInfo);
 }
 
-int Room::ProcessTeamChangeEvent(int position)
+Client* Room::ProcessTeamChangeEvent(Client*& affectedClient)
 {
 	//1. 현재 팀이 어느 팀인가를 확인하고 타 팀에 존재하는 빈자리가 있는지 확인
 	//   -> 빈자리가 없으면 -1을 반환.
 	//2. 클라이언트의 자리를 옮기고, 각각 팀의 유저 수를 적절하게 증감시킨다. -> 자동으로 함
 	//3. 새로운 자리의 인덱스를 반환한다.
 	//방장인 경우에는 host위치를 변경해주어야함 ** 빼먹었다가 추가함
-	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
+	bool isOnRedTeam = affectedClient->position() < BLUEINDEXSTART ? true : false;
 	
 	int maxuser = roomInfo->limit() / 2;
 	int nextIdx;
+	Client* newClient;
 	EnterCriticalSection(&csForRoomInfo);
 	if (isOnRedTeam) 
 	{
 		nextIdx = roomInfo->blueteam_size();
 		if (nextIdx == maxuser)
-			return -1;
+			return nullptr;
 		
 		nextIdx += BLUEINDEXSTART;
-		MoveClientToOppositeTeam(position, nextIdx, roomInfo->mutable_redteam(), roomInfo->mutable_blueteam());
+		newClient = MoveClientToOppositeTeam(affectedClient, nextIdx, roomInfo->mutable_redteam(), roomInfo->mutable_blueteam());
 	}
 	else 
 	{
 		nextIdx = roomInfo->redteam_size();
 		if (nextIdx == maxuser)
-			return -1;
+			return nullptr;
 
-		MoveClientToOppositeTeam(position, nextIdx, roomInfo->mutable_blueteam(), roomInfo->mutable_redteam());
+		newClient = MoveClientToOppositeTeam(affectedClient, nextIdx, roomInfo->mutable_blueteam(), roomInfo->mutable_redteam());
 	}
 	LeaveCriticalSection(&csForRoomInfo);
-	return nextIdx;
+	return newClient;
 }
 
-bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, bool& hostChanged) // ret T - if the room obj needs to be destroyed, F - otherwise.
+bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo) // ret T - if the room obj needs to be destroyed, F - otherwise.
 {
 	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
 	bool isClosed = false;
 
 	EnterCriticalSection(&csForRoomInfo);
+	AdjustClientsIndexes(position);
+
 	if (isOnRedTeam) // 클라이언트 객체를 리스트에서 삭제한다 ( 해제까지 해줌 )
 		roomInfo->mutable_redteam()->DeleteSubrange(position, 1);
 	else
@@ -130,7 +129,6 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo, boo
 	{
 		if (roomInfo->host() == position)
 		{ //2 - 방에 혼자가 아닌데, 방장인 경우
-			hostChanged = true;
 			ChangeGameroomHost(isOnRedTeam); //방장 변경
 		}
 	}
@@ -206,7 +204,7 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 			}
 
 			if (!servManager.SendPacket(*itr))
-				std::cout << "메시지 전송 실패쓰\n";
+				std::cout << "Send Message Failed\n";
 		}
 
 		LeaveCriticalSection(&self->csForBroadcast);
@@ -222,17 +220,43 @@ Client* Room::GetClient(int position)
 	
 }
 
-void Room::MoveClientToOppositeTeam(int prev_pos, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo)
+Client* Room::MoveClientToOppositeTeam(Client*& affectedClient, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo)
 {
-	Client* affectedClient = GetClient(prev_pos); // position이 8 이상이어도 알아서 계산됨. 바로 위에 있는 함수
 	Client* newClient = addTo->Add();
 	newClient->CopyFrom(*affectedClient);
 
-	deleteFrom->DeleteSubrange(prev_pos % BLUEINDEXSTART, 1);
-	newClient->set_position(next_pos);
-
-	if (prev_pos == roomInfo->host()) //방장일 경우에 방 정보도 수정해줘야한다
+	if (affectedClient->position() == roomInfo->host()) //방장일 경우에 방 정보도 수정해줘야한다
 		roomInfo->set_host(next_pos);
+
+	AdjustClientsIndexes(affectedClient->position());
+	deleteFrom->DeleteSubrange(affectedClient->position() % BLUEINDEXSTART, 1);
+	newClient->set_position(next_pos);
+	return newClient;
+}
+
+void Room::AdjustClientsIndexes(int basePos)
+{
+	int size;
+	Mutable_Team team;
+	if (basePos < BLUEINDEXSTART)
+	{
+		size = roomInfo->redteam_size();
+		team = roomInfo->mutable_redteam();
+	}
+	else
+	{
+		basePos -= BLUEINDEXSTART;
+		size = roomInfo->blueteam_size();
+		team = roomInfo->mutable_blueteam();
+	}
+
+	if (basePos >= size)
+		return;
+
+	for (int i = basePos + 1; i < size; i++)
+	{
+		(*team)[i].set_position(team->Get(i).position() - 1);
+	}
 }
 
 void Room::ChangeGameroomHost(bool isOnRedteam)
@@ -253,4 +277,5 @@ void Room::ChangeGameroomHost(bool isOnRedteam)
 			nextHost = BLUEINDEXSTART;
 	}
 	roomInfo->set_host(nextHost);
+	GetClient(nextHost)->set_ready(false);
 }
