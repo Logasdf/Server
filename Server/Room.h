@@ -13,11 +13,14 @@ public:
 
 	void AddClientInfo(SocketInfo* lpSocketInfo, string& userName);
 	void RemoveClientInfo(SocketInfo* lpSocketInfo, string& userName);
+
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsBegin();
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
+
 	void ProcessReadyEvent(Client*& affectedClient);
 	Client* ProcessTeamChangeEvent(Client*& affectedClient);
 	bool ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo);
+
 	bool CanStart();
 	bool HasGameStarted() const;
 	void SetGameStartFlag(bool to);
@@ -37,13 +40,14 @@ private:
 	RoomInfo* roomInfo;
 	std::forward_list<SocketInfo*> clientSockets;
 	std::unordered_map<std::string, SocketInfo*> clientMap; // <Client_Name, Client_Socket>
+
 	CRITICAL_SECTION csForClientSockets;
 	CRITICAL_SECTION csForRoomInfo;
+	// Test for broadcast
+	CRITICAL_SECTION csForBroadcast;
 
 	const int BLUEINDEXSTART = 8;
 	bool gameStarted;
-	// Test for broadcast
-	CRITICAL_SECTION csForBroadcast;
 
 	static unsigned __stdcall ThreadMain(void* pVoid);
 

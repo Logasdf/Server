@@ -231,6 +231,8 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 		}
 
 		LeaveCriticalSection(&self->csForBroadcast);
+		//test 
+		delete pMessage;
 	}
 
 	return 0;
