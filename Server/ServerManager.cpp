@@ -639,9 +639,14 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		}
 		else if (contentType == "CHAT_MESSAGE") 
 		{
-			std::cout << "chat message called" << std::endl;
+			int roomId = stoi(dataMap["roomId"]);
+			EnterCriticalSection(&csForServerRoomList);
+			Room* room = serverRoomList[roomId];
+			LeaveCriticalSection(&csForServerRoomList);
+			PostQueuedCompletionStatus(room->hCompPort, 0, reinterpret_cast<ULONG_PTR>(message), NULL);
+			return true;
 		}
-		else if (contentType == "START_GAME") //without body로 옮길 수 있을 거 같은 느낌적인 느낌
+		else if (contentType == "START_GAME") 
 		{
 			std::cout << "start game called" << std::endl;
 			int roomId = stoi(dataMap["roomId"]);
