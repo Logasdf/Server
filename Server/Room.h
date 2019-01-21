@@ -18,9 +18,10 @@ public:
 	void ProcessReadyEvent(Client*& affectedClient);
 	Client* ProcessTeamChangeEvent(Client*& affectedClient);
 	bool ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo);
-	//test중 게임중인 방 접근불가 부분
-	void SetGameStartFlag(bool to);
+	bool CanStart();
 	bool HasGameStarted() const;
+	void SetGameStartFlag(bool to);
+	
 
 	SocketInfo*& GetSocketUsingName(string& userName);
 

@@ -470,7 +470,6 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 				break;
 			case MessageType::TEAM_CHANGE:
 			{
-				std::cout << "team change called" << std::endl;
 				Client* newPosition = pRoom->ProcessTeamChangeEvent(messageFrom);
 				if (newPosition != nullptr)
 				{
@@ -642,7 +641,7 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		{
 			std::cout << "chat message called" << std::endl;
 		}
-		else if (contentType == "START_GAME")
+		else if (contentType == "START_GAME") //without body로 옮길 수 있을 거 같은 느낌적인 느낌
 		{
 			std::cout << "start game called" << std::endl;
 			int roomId = stoi(dataMap["roomId"]);
@@ -651,8 +650,23 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			EnterCriticalSection(&csForServerRoomList);
 			Room*& _room = serverRoomList[roomId];
 			LeaveCriticalSection(&csForServerRoomList);
-			_room->SetGameStartFlag(true);
-			BroadcastMessage(_room, nullptr, START_GAME);
+			if (_room->CanStart())
+			{
+				_room->SetGameStartFlag(true);
+				BroadcastMessage(_room, nullptr, START_GAME);
+			}
+			else
+			{
+				Data response;
+				(*response.mutable_datamap())["contentType"] = "REJECT_START_GAME";
+				(*response.mutable_datamap())["errorCode"] = "402";
+				(*response.mutable_datamap())["errorMessage"] = "To start a game, all users should be ready";
+				lpSocketInfo->sendBuf->wsaBuf.len =
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
+			}
 			//ReleaseMutex(hMutexObj);
 		}
 
