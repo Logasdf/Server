@@ -8,6 +8,7 @@ Room::Room(RoomInfo * initVal) : roomInfo(initVal)
 	InitializeCriticalSection(&csForClientSockets);
 	InitializeCriticalSection(&csForRoomInfo);
 	InitializeCriticalSection(&csForBroadcast);
+	gameStarted = false;
 }
 
 Room::~Room()
@@ -104,12 +105,16 @@ Client* Room::ProcessTeamChangeEvent(Client*& affectedClient)
 	return newClient;
 }
 
-bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo) // ret T - if the room obj needs to be destroyed, F - otherwise.
+bool Room::ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo) // ret T - if the room obj needs to be destroyed, F - otherwise.
 {
+	int position = affectedClient->position();
 	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
 	bool isClosed = false;
 
 	EnterCriticalSection(&csForRoomInfo);
+	if (affectedClient->ready())
+		roomInfo->set_readycount(roomInfo->readycount() - 1);
+
 	AdjustClientsIndexes(position);
 
 	if (isOnRedTeam) // 클라이언트 객체를 리스트에서 삭제한다 ( 해제까지 해줌 )
@@ -135,6 +140,16 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo) // 
 	roomInfo->set_current(roomInfo->current() - 1); //인원수 줄이기
 	LeaveCriticalSection(&csForRoomInfo);
 	return isClosed;
+}
+
+void Room::SetGameStartFlag(bool to)
+{
+	gameStarted = to;
+}
+
+bool Room::HasGameStarted() const
+{
+	return gameStarted;
 }
 
 SocketInfo*& Room::GetSocketUsingName(string & userName)
