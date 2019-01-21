@@ -456,7 +456,9 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 	}
 	else
 	{
+		EnterCriticalSection(&csForClientLocationTable);
 		Client* messageFrom = clientLocationTable[lpSocketInfo];
+		LeaveCriticalSection(&csForClientLocationTable);
 		int roomId = messageFrom->clntid();
 		EnterCriticalSection(&csForServerRoomList);
 		Room* pRoom = serverRoomList[roomId];
@@ -468,18 +470,19 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 				break;
 			case MessageType::TEAM_CHANGE:
 			{
-				std::cout << "team change called" << std::endl;
 				Client* newPosition = pRoom->ProcessTeamChangeEvent(messageFrom);
 				if (newPosition != nullptr)
 				{
+					EnterCriticalSection(&csForClientLocationTable);
 					clientLocationTable[lpSocketInfo] = newPosition;
+					LeaveCriticalSection(&csForClientLocationTable);
 				}
 				break;
 			}
 			case MessageType::LEAVE_GAMEROOM:
 				std::cout << "leave gameroom called" << std::endl;
 
-				bool isClosed = pRoom->ProcessLeaveGameroomEvent(messageFrom->position(), lpSocketInfo);
+				bool isClosed = pRoom->ProcessLeaveGameroomEvent(messageFrom, lpSocketInfo);
 				EnterCriticalSection(&csForClientLocationTable);
 				clientLocationTable[lpSocketInfo] = nullptr;
 				LeaveCriticalSection(&csForClientLocationTable);
@@ -570,15 +573,31 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			}
 			else 
 			{ //입장하고자 하는 방이 존재하는 상황.
+				EnterCriticalSection(&csForServerRoomList);
+				Room* pRoom = serverRoomList[roomIdToEnter];
+				LeaveCriticalSection(&csForServerRoomList);
 				RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomIdToEnter];
 				
-				if (roomInfo.current() == roomInfo.limit())
+				if (pRoom->HasGameStarted())
+				{ //게임이 시작했을 때. 인게임에도 접속이 가능하게 하려면 아래 else if하고 순서를 바꾸는게 좋을듯.
+					LeaveCriticalSection(&csForRoomList);
+					Data response;
+					(*response.mutable_datamap())["contentType"] = "REJECT_ENTER_ROOM";
+					(*response.mutable_datamap())["errorCode"] = "401";
+					(*response.mutable_datamap())["errorMessage"] = "The game has already started!";
+					lpSocketInfo->sendBuf->wsaBuf.len =
+						lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+					if (!SendPacket(lpSocketInfo))
+						return false;
+				}
+				else if (roomInfo.current() == roomInfo.limit())
 				{ // 인원수 꽉찬경우.
 					LeaveCriticalSection(&csForRoomList);
 					Data response;
 					(*response.mutable_datamap())["contentType"] = "REJECT_ENTER_ROOM";
 					(*response.mutable_datamap())["errorCode"] = "401";
-					(*response.mutable_datamap())["errorMessage"] = "The Room is already full!";
+					(*response.mutable_datamap())["errorMessage"] = "The room is already full!";
 					lpSocketInfo->sendBuf->wsaBuf.len =
 						lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
 
@@ -622,14 +641,32 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 		{
 			std::cout << "chat message called" << std::endl;
 		}
-		else if (contentType == "START_GAME")
+		else if (contentType == "START_GAME") //without body로 옮길 수 있을 거 같은 느낌적인 느낌
 		{
 			std::cout << "start game called" << std::endl;
 			int roomId = stoi(dataMap["roomId"]);
 
 			//WaitForSingleObject(hMutexObj, INFINITE);
+			EnterCriticalSection(&csForServerRoomList);
 			Room*& _room = serverRoomList[roomId];
-			BroadcastMessage(_room, nullptr, START_GAME);
+			LeaveCriticalSection(&csForServerRoomList);
+			if (_room->CanStart())
+			{
+				_room->SetGameStartFlag(true);
+				BroadcastMessage(_room, nullptr, START_GAME);
+			}
+			else
+			{
+				Data response;
+				(*response.mutable_datamap())["contentType"] = "REJECT_START_GAME";
+				(*response.mutable_datamap())["errorCode"] = "402";
+				(*response.mutable_datamap())["errorMessage"] = "To start a game, all users should be ready";
+				lpSocketInfo->sendBuf->wsaBuf.len =
+					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
+
+				if (!SendPacket(lpSocketInfo))
+					return false;
+			}
 			//ReleaseMutex(hMutexObj);
 		}
 
@@ -755,7 +792,7 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 		Room* currentLocation = serverRoomList[roomId];
 
 		RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
-		bool isClosed = currentLocation->ProcessLeaveGameroomEvent(clientInstance->position(), lpSocketInfo);
+		bool isClosed = currentLocation->ProcessLeaveGameroomEvent(clientInstance, lpSocketInfo);
 		BroadcastMessage(currentLocation, &roomInfo);
 
 	

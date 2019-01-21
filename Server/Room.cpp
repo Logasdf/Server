@@ -8,6 +8,7 @@ Room::Room(RoomInfo * initVal) : roomInfo(initVal)
 	InitializeCriticalSection(&csForClientSockets);
 	InitializeCriticalSection(&csForRoomInfo);
 	InitializeCriticalSection(&csForBroadcast);
+	gameStarted = false;
 }
 
 Room::~Room()
@@ -17,7 +18,7 @@ Room::~Room()
 	DeleteCriticalSection(&csForBroadcast);
 	CloseHandle(hCompPort);
 
-	std::cout << "Room 객체가 삭제되었습니다." << std::endl;
+	std::cout << "~Room() called" << std::endl;
 }
 
 void Room::AddClientInfo(SocketInfo * lpSocketInfo, string& userName)
@@ -104,13 +105,15 @@ Client* Room::ProcessTeamChangeEvent(Client*& affectedClient)
 	return newClient;
 }
 
-bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo) // ret T - if the room obj needs to be destroyed, F - otherwise.
+bool Room::ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo) // ret T - if the room obj needs to be destroyed, F - otherwise.
 {
+	int position = affectedClient->position();
 	bool isOnRedTeam = position < BLUEINDEXSTART ? true : false;
 	bool isClosed = false;
 
 	EnterCriticalSection(&csForRoomInfo);
-	AdjustClientsIndexes(position);
+	if (affectedClient->ready())
+		roomInfo->set_readycount(roomInfo->readycount() - 1);
 
 	if (isOnRedTeam) // 클라이언트 객체를 리스트에서 삭제한다 ( 해제까지 해줌 )
 		roomInfo->mutable_redteam()->DeleteSubrange(position, 1);
@@ -132,9 +135,29 @@ bool Room::ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo) // 
 			ChangeGameroomHost(isOnRedTeam); //방장 변경
 		}
 	}
+
+	AdjustClientsIndexes(position);
 	roomInfo->set_current(roomInfo->current() - 1); //인원수 줄이기
 	LeaveCriticalSection(&csForRoomInfo);
 	return isClosed;
+}
+
+bool Room::CanStart()
+{	// current == ready_cnt + 1 인 경우면 모든 사람이 레디 완료된 상황
+	EnterCriticalSection(&csForRoomInfo);
+	bool ret = (roomInfo->current() - 1) == roomInfo->readycount() ? true : false;
+	LeaveCriticalSection(&csForRoomInfo);
+	return ret;
+}
+
+void Room::SetGameStartFlag(bool to)
+{
+	gameStarted = to;
+}
+
+bool Room::HasGameStarted() const
+{
+	return gameStarted;
 }
 
 SocketInfo*& Room::GetSocketUsingName(string & userName)
@@ -217,34 +240,41 @@ Client* Room::GetClient(int position)
 {
 	return position < BLUEINDEXSTART ? 
 		roomInfo->mutable_redteam(position) : roomInfo->mutable_blueteam(position % BLUEINDEXSTART);
-	
 }
 
 Client* Room::MoveClientToOppositeTeam(Client*& affectedClient, int next_pos, Mutable_Team deleteFrom, Mutable_Team addTo)
 {
 	Client* newClient = addTo->Add();
 	newClient->CopyFrom(*affectedClient);
-
+	int prev_pos = affectedClient->position();
 	if (affectedClient->position() == roomInfo->host()) //방장일 경우에 방 정보도 수정해줘야한다
+	{
 		roomInfo->set_host(next_pos);
-
-	AdjustClientsIndexes(affectedClient->position());
-	deleteFrom->DeleteSubrange(affectedClient->position() % BLUEINDEXSTART, 1);
+	}
+	deleteFrom->DeleteSubrange(prev_pos % BLUEINDEXSTART, 1);
+	AdjustClientsIndexes(prev_pos);
 	newClient->set_position(next_pos);
 	return newClient;
 }
 
 void Room::AdjustClientsIndexes(int basePos)
-{
+{ 
 	int size;
 	Mutable_Team team;
+	bool needHostDecrement = false;
+	int hostPos = roomInfo->host();
+
 	if (basePos < BLUEINDEXSTART)
 	{
+		if (hostPos < BLUEINDEXSTART && hostPos >= basePos)
+			needHostDecrement = true;
 		size = roomInfo->redteam_size();
 		team = roomInfo->mutable_redteam();
 	}
 	else
 	{
+		if (hostPos >= BLUEINDEXSTART && hostPos >= basePos)
+			needHostDecrement = true;
 		basePos -= BLUEINDEXSTART;
 		size = roomInfo->blueteam_size();
 		team = roomInfo->mutable_blueteam();
@@ -253,10 +283,13 @@ void Room::AdjustClientsIndexes(int basePos)
 	if (basePos >= size)
 		return;
 
-	for (int i = basePos + 1; i < size; i++)
+	for (int i = basePos; i < size; i++)
 	{
 		(*team)[i].set_position(team->Get(i).position() - 1);
 	}
+
+	if (needHostDecrement)
+		roomInfo->set_host(roomInfo->host() - 1);
 }
 
 void Room::ChangeGameroomHost(bool isOnRedteam)
@@ -277,5 +310,10 @@ void Room::ChangeGameroomHost(bool isOnRedteam)
 			nextHost = BLUEINDEXSTART;
 	}
 	roomInfo->set_host(nextHost);
-	GetClient(nextHost)->set_ready(false);
+	Client* nextHostClnt = GetClient(nextHost);
+	if (nextHostClnt->ready())
+	{
+		GetClient(nextHost)->set_ready(false);
+		roomInfo->set_readycount(roomInfo->readycount() - 1);
+	}
 }

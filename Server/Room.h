@@ -15,9 +15,13 @@ public:
 	void RemoveClientInfo(SocketInfo* lpSocketInfo, string& userName);
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsBegin();
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
-	void ProcessReadyEvent(Client*& client);
-	Client* ProcessTeamChangeEvent(Client*& position);
-	bool ProcessLeaveGameroomEvent(int position, SocketInfo* lpSocketInfo);
+	void ProcessReadyEvent(Client*& affectedClient);
+	Client* ProcessTeamChangeEvent(Client*& affectedClient);
+	bool ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo);
+	bool CanStart();
+	bool HasGameStarted() const;
+	void SetGameStartFlag(bool to);
+	
 
 	SocketInfo*& GetSocketUsingName(string& userName);
 
@@ -33,10 +37,11 @@ private:
 	RoomInfo* roomInfo;
 	std::forward_list<SocketInfo*> clientSockets;
 	std::unordered_map<std::string, SocketInfo*> clientMap; // <Client_Name, Client_Socket>
-	const int BLUEINDEXSTART = 8;
 	CRITICAL_SECTION csForClientSockets;
 	CRITICAL_SECTION csForRoomInfo;
 
+	const int BLUEINDEXSTART = 8;
+	bool gameStarted;
 	// Test for broadcast
 	CRITICAL_SECTION csForBroadcast;
 
