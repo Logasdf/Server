@@ -38,7 +38,7 @@ namespace protobuf_PlayState_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[4];
+  static const ::google::protobuf::internal::ParseTable schema[5];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -46,6 +46,9 @@ struct TableStruct {
 void AddDescriptors();
 }  // namespace protobuf_PlayState_2eproto
 namespace state {
+class HitState;
+class HitStateDefaultTypeInternal;
+extern HitStateDefaultTypeInternal _HitState_default_instance_;
 class PlayState;
 class PlayStateDefaultTypeInternal;
 extern PlayStateDefaultTypeInternal _PlayState_default_instance_;
@@ -61,6 +64,7 @@ extern WorldStateDefaultTypeInternal _WorldState_default_instance_;
 }  // namespace state
 namespace google {
 namespace protobuf {
+template<> ::state::HitState* Arena::CreateMaybeMessage<::state::HitState>(Arena*);
 template<> ::state::PlayState* Arena::CreateMaybeMessage<::state::PlayState>(Arena*);
 template<> ::state::TransformProto* Arena::CreateMaybeMessage<::state::TransformProto>(Arena*);
 template<> ::state::Vector3Proto* Arena::CreateMaybeMessage<::state::Vector3Proto>(Arena*);
@@ -482,6 +486,139 @@ class PlayState : public ::google::protobuf::Message /* @@protoc_insertion_point
 };
 // -------------------------------------------------------------------
 
+class HitState : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:state.HitState) */ {
+ public:
+  HitState();
+  virtual ~HitState();
+
+  HitState(const HitState& from);
+
+  inline HitState& operator=(const HitState& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  HitState(HitState&& from) noexcept
+    : HitState() {
+    *this = ::std::move(from);
+  }
+
+  inline HitState& operator=(HitState&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const HitState& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const HitState* internal_default_instance() {
+    return reinterpret_cast<const HitState*>(
+               &_HitState_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  void Swap(HitState* other);
+  friend void swap(HitState& a, HitState& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline HitState* New() const final {
+    return CreateMaybeMessage<HitState>(NULL);
+  }
+
+  HitState* New(::google::protobuf::Arena* arena) const final {
+    return CreateMaybeMessage<HitState>(arena);
+  }
+  void CopyFrom(const ::google::protobuf::Message& from) final;
+  void MergeFrom(const ::google::protobuf::Message& from) final;
+  void CopyFrom(const HitState& from);
+  void MergeFrom(const HitState& from);
+  void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) final;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const final;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(HitState* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string from = 1;
+  void clear_from();
+  static const int kFromFieldNumber = 1;
+  const ::std::string& from() const;
+  void set_from(const ::std::string& value);
+  #if LANG_CXX11
+  void set_from(::std::string&& value);
+  #endif
+  void set_from(const char* value);
+  void set_from(const char* value, size_t size);
+  ::std::string* mutable_from();
+  ::std::string* release_from();
+  void set_allocated_from(::std::string* from);
+
+  // string to = 2;
+  void clear_to();
+  static const int kToFieldNumber = 2;
+  const ::std::string& to() const;
+  void set_to(const ::std::string& value);
+  #if LANG_CXX11
+  void set_to(::std::string&& value);
+  #endif
+  void set_to(const char* value);
+  void set_to(const char* value, size_t size);
+  ::std::string* mutable_to();
+  ::std::string* release_to();
+  void set_allocated_to(::std::string* to);
+
+  // int32 damage = 3;
+  void clear_damage();
+  static const int kDamageFieldNumber = 3;
+  ::google::protobuf::int32 damage() const;
+  void set_damage(::google::protobuf::int32 value);
+
+  // @@protoc_insertion_point(class_scope:state.HitState)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr from_;
+  ::google::protobuf::internal::ArenaStringPtr to_;
+  ::google::protobuf::int32 damage_;
+  mutable ::google::protobuf::internal::CachedSize _cached_size_;
+  friend struct ::protobuf_PlayState_2eproto::TableStruct;
+};
+// -------------------------------------------------------------------
+
 class WorldState : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:state.WorldState) */ {
  public:
   WorldState();
@@ -517,7 +654,7 @@ class WorldState : public ::google::protobuf::Message /* @@protoc_insertion_poin
                &_WorldState_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    4;
 
   void Swap(WorldState* other);
   friend void swap(WorldState& a, WorldState& b) {
@@ -595,11 +732,29 @@ class WorldState : public ::google::protobuf::Message /* @@protoc_insertion_poin
   ::state::TransformProto* mutable_transform();
   void set_allocated_transform(::state::TransformProto* transform);
 
+  // .state.HitState hitState = 7;
+  bool has_hitstate() const;
+  void clear_hitstate();
+  static const int kHitStateFieldNumber = 7;
+  private:
+  const ::state::HitState& _internal_hitstate() const;
+  public:
+  const ::state::HitState& hitstate() const;
+  ::state::HitState* release_hitstate();
+  ::state::HitState* mutable_hitstate();
+  void set_allocated_hitstate(::state::HitState* hitstate);
+
   // int32 roomId = 1;
   void clear_roomid();
   static const int kRoomIdFieldNumber = 1;
   ::google::protobuf::int32 roomid() const;
   void set_roomid(::google::protobuf::int32 value);
+
+  // int32 health = 5;
+  void clear_health();
+  static const int kHealthFieldNumber = 5;
+  ::google::protobuf::int32 health() const;
+  void set_health(::google::protobuf::int32 value);
 
   // bool fired = 4;
   void clear_fired();
@@ -607,14 +762,44 @@ class WorldState : public ::google::protobuf::Message /* @@protoc_insertion_poin
   bool fired() const;
   void set_fired(bool value);
 
+  // bool hit = 6;
+  void clear_hit();
+  static const int kHitFieldNumber = 6;
+  bool hit() const;
+  void set_hit(bool value);
+
+  // int32 killPoint = 8;
+  void clear_killpoint();
+  static const int kKillPointFieldNumber = 8;
+  ::google::protobuf::int32 killpoint() const;
+  void set_killpoint(::google::protobuf::int32 value);
+
+  // int32 deathPoint = 9;
+  void clear_deathpoint();
+  static const int kDeathPointFieldNumber = 9;
+  ::google::protobuf::int32 deathpoint() const;
+  void set_deathpoint(::google::protobuf::int32 value);
+
+  // int32 animState = 10;
+  void clear_animstate();
+  static const int kAnimStateFieldNumber = 10;
+  ::google::protobuf::int32 animstate() const;
+  void set_animstate(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:state.WorldState)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr clntname_;
   ::state::TransformProto* transform_;
+  ::state::HitState* hitstate_;
   ::google::protobuf::int32 roomid_;
+  ::google::protobuf::int32 health_;
   bool fired_;
+  bool hit_;
+  ::google::protobuf::int32 killpoint_;
+  ::google::protobuf::int32 deathpoint_;
+  ::google::protobuf::int32 animstate_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_PlayState_2eproto::TableStruct;
 };
@@ -1020,6 +1205,130 @@ inline void PlayState::set_allocated_clntname(::std::string* clntname) {
 
 // -------------------------------------------------------------------
 
+// HitState
+
+// string from = 1;
+inline void HitState::clear_from() {
+  from_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& HitState::from() const {
+  // @@protoc_insertion_point(field_get:state.HitState.from)
+  return from_.GetNoArena();
+}
+inline void HitState::set_from(const ::std::string& value) {
+  
+  from_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:state.HitState.from)
+}
+#if LANG_CXX11
+inline void HitState::set_from(::std::string&& value) {
+  
+  from_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:state.HitState.from)
+}
+#endif
+inline void HitState::set_from(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  from_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:state.HitState.from)
+}
+inline void HitState::set_from(const char* value, size_t size) {
+  
+  from_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:state.HitState.from)
+}
+inline ::std::string* HitState::mutable_from() {
+  
+  // @@protoc_insertion_point(field_mutable:state.HitState.from)
+  return from_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* HitState::release_from() {
+  // @@protoc_insertion_point(field_release:state.HitState.from)
+  
+  return from_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void HitState::set_allocated_from(::std::string* from) {
+  if (from != NULL) {
+    
+  } else {
+    
+  }
+  from_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from);
+  // @@protoc_insertion_point(field_set_allocated:state.HitState.from)
+}
+
+// string to = 2;
+inline void HitState::clear_to() {
+  to_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& HitState::to() const {
+  // @@protoc_insertion_point(field_get:state.HitState.to)
+  return to_.GetNoArena();
+}
+inline void HitState::set_to(const ::std::string& value) {
+  
+  to_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:state.HitState.to)
+}
+#if LANG_CXX11
+inline void HitState::set_to(::std::string&& value) {
+  
+  to_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:state.HitState.to)
+}
+#endif
+inline void HitState::set_to(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  to_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:state.HitState.to)
+}
+inline void HitState::set_to(const char* value, size_t size) {
+  
+  to_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:state.HitState.to)
+}
+inline ::std::string* HitState::mutable_to() {
+  
+  // @@protoc_insertion_point(field_mutable:state.HitState.to)
+  return to_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* HitState::release_to() {
+  // @@protoc_insertion_point(field_release:state.HitState.to)
+  
+  return to_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void HitState::set_allocated_to(::std::string* to) {
+  if (to != NULL) {
+    
+  } else {
+    
+  }
+  to_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), to);
+  // @@protoc_insertion_point(field_set_allocated:state.HitState.to)
+}
+
+// int32 damage = 3;
+inline void HitState::clear_damage() {
+  damage_ = 0;
+}
+inline ::google::protobuf::int32 HitState::damage() const {
+  // @@protoc_insertion_point(field_get:state.HitState.damage)
+  return damage_;
+}
+inline void HitState::set_damage(::google::protobuf::int32 value) {
+  
+  damage_ = value;
+  // @@protoc_insertion_point(field_set:state.HitState.damage)
+}
+
+// -------------------------------------------------------------------
+
 // WorldState
 
 // int32 roomId = 1;
@@ -1157,9 +1466,135 @@ inline void WorldState::set_fired(bool value) {
   // @@protoc_insertion_point(field_set:state.WorldState.fired)
 }
 
+// int32 health = 5;
+inline void WorldState::clear_health() {
+  health_ = 0;
+}
+inline ::google::protobuf::int32 WorldState::health() const {
+  // @@protoc_insertion_point(field_get:state.WorldState.health)
+  return health_;
+}
+inline void WorldState::set_health(::google::protobuf::int32 value) {
+  
+  health_ = value;
+  // @@protoc_insertion_point(field_set:state.WorldState.health)
+}
+
+// bool hit = 6;
+inline void WorldState::clear_hit() {
+  hit_ = false;
+}
+inline bool WorldState::hit() const {
+  // @@protoc_insertion_point(field_get:state.WorldState.hit)
+  return hit_;
+}
+inline void WorldState::set_hit(bool value) {
+  
+  hit_ = value;
+  // @@protoc_insertion_point(field_set:state.WorldState.hit)
+}
+
+// .state.HitState hitState = 7;
+inline bool WorldState::has_hitstate() const {
+  return this != internal_default_instance() && hitstate_ != NULL;
+}
+inline void WorldState::clear_hitstate() {
+  if (GetArenaNoVirtual() == NULL && hitstate_ != NULL) {
+    delete hitstate_;
+  }
+  hitstate_ = NULL;
+}
+inline const ::state::HitState& WorldState::_internal_hitstate() const {
+  return *hitstate_;
+}
+inline const ::state::HitState& WorldState::hitstate() const {
+  const ::state::HitState* p = hitstate_;
+  // @@protoc_insertion_point(field_get:state.WorldState.hitState)
+  return p != NULL ? *p : *reinterpret_cast<const ::state::HitState*>(
+      &::state::_HitState_default_instance_);
+}
+inline ::state::HitState* WorldState::release_hitstate() {
+  // @@protoc_insertion_point(field_release:state.WorldState.hitState)
+  
+  ::state::HitState* temp = hitstate_;
+  hitstate_ = NULL;
+  return temp;
+}
+inline ::state::HitState* WorldState::mutable_hitstate() {
+  
+  if (hitstate_ == NULL) {
+    auto* p = CreateMaybeMessage<::state::HitState>(GetArenaNoVirtual());
+    hitstate_ = p;
+  }
+  // @@protoc_insertion_point(field_mutable:state.WorldState.hitState)
+  return hitstate_;
+}
+inline void WorldState::set_allocated_hitstate(::state::HitState* hitstate) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete hitstate_;
+  }
+  if (hitstate) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      hitstate = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, hitstate, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  hitstate_ = hitstate;
+  // @@protoc_insertion_point(field_set_allocated:state.WorldState.hitState)
+}
+
+// int32 killPoint = 8;
+inline void WorldState::clear_killpoint() {
+  killpoint_ = 0;
+}
+inline ::google::protobuf::int32 WorldState::killpoint() const {
+  // @@protoc_insertion_point(field_get:state.WorldState.killPoint)
+  return killpoint_;
+}
+inline void WorldState::set_killpoint(::google::protobuf::int32 value) {
+  
+  killpoint_ = value;
+  // @@protoc_insertion_point(field_set:state.WorldState.killPoint)
+}
+
+// int32 deathPoint = 9;
+inline void WorldState::clear_deathpoint() {
+  deathpoint_ = 0;
+}
+inline ::google::protobuf::int32 WorldState::deathpoint() const {
+  // @@protoc_insertion_point(field_get:state.WorldState.deathPoint)
+  return deathpoint_;
+}
+inline void WorldState::set_deathpoint(::google::protobuf::int32 value) {
+  
+  deathpoint_ = value;
+  // @@protoc_insertion_point(field_set:state.WorldState.deathPoint)
+}
+
+// int32 animState = 10;
+inline void WorldState::clear_animstate() {
+  animstate_ = 0;
+}
+inline ::google::protobuf::int32 WorldState::animstate() const {
+  // @@protoc_insertion_point(field_get:state.WorldState.animState)
+  return animstate_;
+}
+inline void WorldState::set_animstate(::google::protobuf::int32 value) {
+  
+  animstate_ = value;
+  // @@protoc_insertion_point(field_set:state.WorldState.animState)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -25,10 +25,25 @@ message PlayState {
     string clntName = 7;
 }
 
+message HitState {
+    string from = 1;
+    string to = 2;
+    int32 damage = 3;
+}
+
 message WorldState {
     int32 roomId = 1;
     string clntName = 2;
 
     TransformProto transform = 3;
     bool fired = 4;
+
+    int32 health = 5;
+    bool hit = 6;
+    HitState hitState = 7;
+
+    int32 killPoint = 8;
+    int32 deathPoint = 9;
+
+    int32 animState = 10;
 }
