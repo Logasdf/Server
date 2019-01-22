@@ -21,7 +21,7 @@ public:
 	Client* ProcessTeamChangeEvent(Client*& affectedClient);
 	bool ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSocketInfo);
 
-	bool CanStart();
+	bool CanStart(string& errorMessage);
 	bool HasGameStarted() const;
 	void SetGameStartFlag(bool to);
 	

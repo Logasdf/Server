@@ -142,12 +142,26 @@ bool Room::ProcessLeaveGameroomEvent(Client*& affectedClient, SocketInfo* lpSock
 	return isClosed;
 }
 
-bool Room::CanStart()
+bool Room::CanStart(string& errorMessage)
 {	// current == ready_cnt + 1 인 경우면 모든 사람이 레디 완료된 상황
 	EnterCriticalSection(&csForRoomInfo);
-	bool ret = (roomInfo->current() - 1) == roomInfo->readycount() ? true : false;
+	bool allReady = (roomInfo->current() - 1) == roomInfo->readycount();
+	bool isFair = roomInfo->blueteam_size() == roomInfo->redteam_size();
 	LeaveCriticalSection(&csForRoomInfo);
-	return ret;
+	
+	if (!allReady)
+	{
+		errorMessage = "To start a game, all users should be ready!";
+		return false;
+	}
+	
+	if (!isFair) 
+	{
+		errorMessage = "To start a game, the number of users on each team should be the same!";
+		return false;
+	}
+
+	return true;
 }
 
 void Room::SetGameStartFlag(bool to)

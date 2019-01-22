@@ -655,7 +655,8 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			EnterCriticalSection(&csForServerRoomList);
 			Room*& _room = serverRoomList[roomId];
 			LeaveCriticalSection(&csForServerRoomList);
-			if (_room->CanStart())
+			string errorMessage;
+			if (_room->CanStart(errorMessage))
 			{
 				_room->SetGameStartFlag(true);
 				BroadcastMessage(_room, nullptr, START_GAME);
@@ -665,7 +666,7 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 				Data response;
 				(*response.mutable_datamap())["contentType"] = "REJECT_START_GAME";
 				(*response.mutable_datamap())["errorCode"] = "402";
-				(*response.mutable_datamap())["errorMessage"] = "To start a game, all users should be ready";
+				(*response.mutable_datamap())["errorMessage"] = errorMessage;
 				lpSocketInfo->sendBuf->wsaBuf.len =
 					lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &response);
 
