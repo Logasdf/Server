@@ -7,9 +7,15 @@ IOInfo::IOInfo()
 	wsaBuf.len = 0;
 	wsaBuf.buf = NULL;
 	called = false;
+
+	isAcquired = false;
+	InitializeCriticalSection(&csForSend);
 }
 
-IOInfo::~IOInfo() {}
+IOInfo::~IOInfo() 
+{
+	DeleteCriticalSection(&csForSend);
+}
 
 IOInfo* IOInfo::AllocateIoInfo()
 {

@@ -323,11 +323,13 @@ bool ServerManager::SendPacket(SocketInfo * lpSocketInfo)
 	DWORD dwSendBytes = 0;
 	DWORD dwFlags = 0;
 
-	//WaitForSingleObject(hMutexForSend, INFINITE);
 	ZeroMemory(&lpSocketInfo->sendBuf->overlapped, sizeof(WSAOVERLAPPED));
+
+
+	EnterCriticalSection(&lpSocketInfo->sendBuf->csForSend);
+	lpSocketInfo->sendBuf->isAcquired = true;
 	int rtn = WSASend(lpSocketInfo->socket, &(lpSocketInfo->sendBuf->wsaBuf), 1,
 		&dwSendBytes, dwFlags, &(lpSocketInfo->sendBuf->overlapped), NULL);
-	//ReleaseMutex(hMutexForSend);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -350,11 +352,9 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 	DWORD dwRecvBytes = 0;
 	DWORD dwFlags = 0;
 
-	//WaitForSingleObject(hMutexForRecv, INFINITE);
 	ZeroMemory(&lpSocketInfo->recvBuf->overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSARecv(lpSocketInfo->socket, &(lpSocketInfo->recvBuf->wsaBuf), 1,
 		&dwRecvBytes, &dwFlags, &(lpSocketInfo->recvBuf->overlapped), NULL);
-	//ReleaseMutex(hMutexForRecv);
 
 	if (rtn == SOCKET_ERROR)
 	{
@@ -372,18 +372,15 @@ bool ServerManager::RecvPacket(SocketInfo * lpSocketInfo)
 
 bool ServerManager::HandleSendEvent(SocketInfo * lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self)
 {
-	WaitForSingleObject(hMutexObj, INFINITE);
+	//LeaveCriticalSection(&lpSocketInfo->sendBuf->csForSend);
+	//printf("socket #%d is leave a critical section\n", lpSocketInfo->socket);
 
-	lpSocketInfo->sendBuf->lpPacket->ClearBuffer();
-	//fprintf(stderr, "Send Bytes: %d\n", dwBytesTransferred);
+	if (lpSocketInfo->sendBuf->isAcquired) {
+		LeaveCriticalSection(&lpSocketInfo->sendBuf->csForSend);
+		lpSocketInfo->sendBuf->isAcquired = false;
 
-	//lpSocketInfo->recvBuf->lpPacket->ClearBuffer();
-	//if (!RecvPacket(lpSocketInfo)) {
-	//	ReleaseMutex(hMutexObj);
-	//	return false;
-	//}
-
-	ReleaseMutex(hMutexObj);
+		//printf("socket #%d is leave a critical section\n", lpSocketInfo->socket);
+	}
 
 	return true;
 }
@@ -819,7 +816,3 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 	clientLocationTable.erase(lpSocketInfo);
 	LeaveCriticalSection(&csForClientLocationTable);
 }
-
-
-
-

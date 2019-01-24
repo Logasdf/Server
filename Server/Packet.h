@@ -22,7 +22,7 @@ using namespace google::protobuf::io;
 #define FOR_IO_SIZE 2048
 #define FOR_BAKCUP_SIZE 2048
 #define FOR_PACK_SIZE 4096
-#define MAX_SIZE 2048
+#define MAX_SIZE 4096
 
 class Packet {
 public:

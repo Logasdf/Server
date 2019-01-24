@@ -233,7 +233,7 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 
 		auto begin = self->ClientSocketsBegin();
 		auto end = self->ClientSocketsEnd();
-		printf("Broadcast!!\n");
+		//printf("Broadcast!!\n");
 		for (auto itr = begin; itr != end; itr++) {
 			if (pMessage != nullptr) {
 				(*itr)->sendBuf->wsaBuf.len =

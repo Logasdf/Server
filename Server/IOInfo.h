@@ -18,4 +18,7 @@ public:
 	WSABUF wsaBuf;
 	Packet* lpPacket;
 	bool called;
+
+	bool isAcquired;
+	CRITICAL_SECTION csForSend;
 };
