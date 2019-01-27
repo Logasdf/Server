@@ -45,6 +45,12 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
         - broadcast the updated RoomInfo instance to the clients in the room.
     - Team Change
         - Request arrives from the client { type = TEAM_CHANGE }
+        - Get the Room instance where the client is currently located.
+        - Call Room::ProcessTeamChangeEvent(Client*) function.
+            - Get the next position for the client, remove it from the prev team array and add it to the opposite team array.
+            - Adjust the positions of clients affected by this move.
+            - If the client is the host of the room, update RoomInfo::host value.
+        - Broadcast the updated RoomInfo instance to the clients in the room.
     - Leave the room.
         - Request arrives from the client { type = LEAVE_GAMEROOM }
     - Chat
