@@ -19,26 +19,30 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
         - Only when asked ( like a client clicks "Refresh" button )  
     - Create Game Room.
         - Request arrives from the client { type, Room Name, Limits, User Name }
-            - Search the map using "room name" as the key to see if it's already in use.
-                - if(map.find(roomName) != map.end()) -> Send the error message to the client.
-            - Create a new room, set the values for the room and insert data into maps.
-            - Send the information of the room processed as RoomInfo class type.
+        - Search the map using "room name" as the key to see if it's already in use.
+            - if(map.find(roomName) != map.end()) -> Send the error message to the client.
+        - Create a new room, set the values for the room and insert data into maps.
+        - Send the information of the room processed as RoomInfo class type.
             
     - Enter Room.
         - Request arrives from the client { type, Room Name, User Name }
-            - Search the map using "room name" as the key to get the roomId.
-            - Search the roomlist using "roomId" as the key to see if the room still exists.
-                - if(roomList.find(roomIdToEnter) == roomList.end()) -> Send the error message to the client.
-            - Check if the game has already started, using Room::HasGameStarted() function.
-                - if it has -> Send the error message to the client.
-            - Check if the room is already full, using RoomInfo::current() and RoomInfo::limit() function.
-                - if it is -> Send the error message to the client.
-            - Create Client instance, set the values, update Room and RoomInfo instances to which the client belongs.
-            - Broadcast the updated RoomInfo instance to the clients in the room.
+        - Search the map using "room name" as the key to get the roomId.
+        - Search the roomlist using "roomId" as the key to see if the room still exists.
+            - if(roomList.find(roomIdToEnter) == roomList.end()) -> Send the error message to the client.
+        - Check if the game has already started, using Room::HasGameStarted() function.
+            - if it has -> Send the error message to the client.
+        - Check if the room is already full, using RoomInfo::current() and RoomInfo::limit() function.
+            - if it is -> Send the error message to the client.
+        - Create Client instance, set the values, update Room and RoomInfo instances to which the client belongs.
+        - Broadcast the updated RoomInfo instance to the clients in the room.
             
     - Push ready button.(After Entering the room)
         - Request arrives from the client { type = READY_EVENT }
-        
+        - Get the Room instance where the client is currently located.
+        - Call Room::ProcessReadyEvent(Client*) function
+            - if the client is in the ready-state, make it "not-ready state" and increment RoomInfo::readycount by 1.
+            - otherwise, do the opposite.
+        - broadcast the updated RoomInfo instance to the clients in the room.
     - Team Change
         - Request arrives from the client { type = TEAM_CHANGE }
     - Leave the room.
