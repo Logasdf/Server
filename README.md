@@ -26,7 +26,15 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
             
     - Enter Room.
         - Request arrives from the client { type, Room Name, User Name }
-        
+            1. Search the map using "room name" as the key to get the roomId.
+            2. Search the roomlist using "roomId" as the key to see if the room still exists.
+                - if(roomList.find(roomIdToEnter) == roomList.end()) -> Send the error message to the client.
+            3. Check if the game has already started, using Room::HasGameStarted() function.
+                - if it has -> Send the error message to the client.
+            4. Check if the room is already full, using RoomInfo::current() and RoomInfo::limit() function.
+                - if it is -> Send the error message to the client.
+            5. 
+            
     - Push ready button.(After Entering the room)
         - Request arrives from the client { type = READY_EVENT }
         
