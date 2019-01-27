@@ -40,7 +40,7 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
         - Request arrives from the client { type = READY_EVENT }
         - Get the Room instance where the client is currently located.
         - Call Room::ProcessReadyEvent(Client*) function
-            - if the client is in the ready-state, make it "not-ready state" and increment RoomInfo::readycount by 1.
+            - if the client is in ready-state, make it "not-ready state" and increment RoomInfo::readycount by 1.
             - otherwise, do the opposite.
         - broadcast the updated RoomInfo instance to the clients in the room.
     - Team Change
@@ -53,5 +53,14 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
         - Broadcast the updated RoomInfo instance to the clients in the room.
     - Leave the room.
         - Request arrives from the client { type = LEAVE_GAMEROOM }
+        - Get the Room instance where the client is currently located.
+        - Call Room::ProcessLeaveGameroomEvent(Client*) function.
+            - if the client is in ready-state, decrement RoomInfo::readycount by 1.
+            - Remove the client from the current team.
+            - Remove the client socket information from the broadcast pool.
+            - if the room has now 0 client -> release the resources and destroy it.
+            - otherwise... check if the client is the host of the room
+                - if so, call Room::ChangeGameroomHost() function and change the host.
+            - Decrement RoomInfo::current by 1.
     - Chat
         - Message arrives from the client { type, Chat Message }
