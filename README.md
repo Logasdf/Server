@@ -33,7 +33,8 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
                 - if it has -> Send the error message to the client.
             - Check if the room is already full, using RoomInfo::current() and RoomInfo::limit() function.
                 - if it is -> Send the error message to the client.
-            -  
+            - Create Client instance, set the values, update Room and RoomInfo instances to which the client belongs.
+            - Broadcast the updated RoomInfo instance to the clients in the room.
             
     - Push ready button.(After Entering the room)
         - Request arrives from the client { type = READY_EVENT }
