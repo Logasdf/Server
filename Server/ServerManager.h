@@ -49,7 +49,6 @@ private:
 	//Temperary Method
 	void InitRoom(RoomInfo* pRoom, SocketInfo* lpSocketInfo, string& roomName, int& limits, string& userName);
 	void SendInitData(SocketInfo*);
-	void BroadcastMessage(Room* room, MessageLite* message = nullptr, int type = -1);
 	void ProcessDisconnection(SocketInfo* lpSocketInfo);
 
 private:

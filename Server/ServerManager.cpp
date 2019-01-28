@@ -84,7 +84,6 @@ void ServerManager::InitSocket(int port, int prime, int sub)
 	memset(&servAdr, 0, sizeof(servAdr));
 	servAdr.sin_family = AF_INET;
 	servAdr.sin_addr.s_addr = htonl(INADDR_ANY);
-	//servAdr.sin_addr.s_addr = inet_addr(IP);
 	servAdr.sin_port = htons(port);
 
 	if (bind(servSock, (SOCKADDR*)&servAdr, sizeof(servAdr)) == SOCKET_ERROR) {
@@ -267,10 +266,18 @@ unsigned __stdcall ServerManager::ThreadMain(void * pVoid)
 			}
 			else
 			{
+				/*
 				fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
 				fprintf(stderr, "#%d will close: %d\n", lpSocketInfo->socket, WSAGetLastError());
-				//ErrorHandling("Client Connection Close, Socket will close", false);
 				self->CloseClient(lpSocketInfo);
+				*/
+				if (dwBytesTransferred == 0)
+				{
+					fprintf(stderr, "[Current Thread #%d] => ", GetCurrentThreadId());
+					fprintf(stderr, "#%d will close: %d\n", lpSocketInfo->socket, WSAGetLastError());
+					self->ProcessDisconnection(lpSocketInfo);
+					self->CloseClient(lpSocketInfo);
+				}
 			}
 			continue;
 		}
@@ -390,18 +397,23 @@ bool ServerManager::HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTrans
 	int type, length;
 	MessageLite* pMessage;
 
-	lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
-	if (type == MessageType::WORLD_STATE) {
-		EnterCriticalSection(&csForServerRoomList);
+	EnterCriticalSection(&csForClientLocationTable);
+	Client* pClient = clientLocationTable[lpSocketInfo];
+	LeaveCriticalSection(&csForClientLocationTable);
 
-		int roomId = ((WorldState*)pMessage)->roomid();
-		Room*& pRoom = serverRoomList[roomId];
-		PostQueuedCompletionStatus(pRoom->hCompPort, 0, 
-			reinterpret_cast<ULONG_PTR>(pMessage), NULL);
-
+	EnterCriticalSection(&csForServerRoomList);
+	if (pClient != nullptr && serverRoomList[pClient->clntid()]->HasGameStarted())
+	{
+		char* rawBuf = new char[dwBytesTransferred];
+		memcpy(rawBuf, lpSocketInfo->recvBuf->lpPacket->buffer, dwBytesTransferred);
+		serverRoomList[pClient->clntid()]->InsertDataIntoBroadcastQueue(
+			dwBytesTransferred, reinterpret_cast<ULONG_PTR>(rawBuf));
 		LeaveCriticalSection(&csForServerRoomList);
 	}
-	else {
+	else 
+	{
+		LeaveCriticalSection(&csForServerRoomList);
+		lpSocketInfo->recvBuf->lpPacket->UnpackMessage(type, length, pMessage);
 		bool rtn = (length == 0) ? HandleWithoutBody(lpSocketInfo, type)
 			: HandleWithBody(lpSocketInfo, pMessage, type);
 		if (!rtn) {
@@ -499,7 +511,7 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 				}
 				break;
 		}
-		BroadcastMessage(pRoom, &rInfo);
+		pRoom->InsertDataIntoBroadcastQueue(BroadcastType::NON_DISPOSABLE, reinterpret_cast<ULONG_PTR>(&rInfo));
 		LeaveCriticalSection(&csForServerRoomList);
 	}
 
@@ -618,18 +630,14 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 					clnt->set_name(userName);
 					clnt->set_ready(false);
 					clientLocationTable[lpSocketInfo] = clnt;
-
 					roomInfo.set_current(roomInfo.current() + 1);
-					lpSocketInfo->sendBuf->wsaBuf.len =
-						lpSocketInfo->sendBuf->lpPacket->PackMessage(-1, &roomInfo);
-					LeaveCriticalSection(&csForRoomList);
-					if (!SendPacket(lpSocketInfo))
-						return false;
 
 					EnterCriticalSection(&csForServerRoomList);
 					Room* room = serverRoomList[roomIdToEnter];
-					BroadcastMessage(room, &roomInfo); //혹시 데이터가 다 보내지기전에 data가 사라질 가능성이 있나?
 					room->AddClientInfo(lpSocketInfo, userName);
+					room->InsertDataIntoBroadcastQueue(BroadcastType::NON_DISPOSABLE,
+						reinterpret_cast<ULONG_PTR>(&roomInfo));
+					LeaveCriticalSection(&csForRoomList);
 					LeaveCriticalSection(&csForServerRoomList);
 				}
 			}
@@ -640,7 +648,7 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			EnterCriticalSection(&csForServerRoomList);
 			Room* room = serverRoomList[roomId];
 			LeaveCriticalSection(&csForServerRoomList);
-			PostQueuedCompletionStatus(room->hCompPort, 0, reinterpret_cast<ULONG_PTR>(message), NULL);
+			room->InsertDataIntoBroadcastQueue(BroadcastType::DISPOSABLE, reinterpret_cast<ULONG_PTR>(message));
 			return true;
 		}
 		else if (contentType == "START_GAME") 
@@ -651,15 +659,17 @@ bool ServerManager::HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* messag
 			//WaitForSingleObject(hMutexObj, INFINITE);
 			EnterCriticalSection(&csForServerRoomList);
 			Room*& _room = serverRoomList[roomId];
-			LeaveCriticalSection(&csForServerRoomList);
 			string errorMessage;
 			if (_room->CanStart(errorMessage))
 			{
 				_room->SetGameStartFlag(true);
-				BroadcastMessage(_room, nullptr, START_GAME);
+				int* type = new int(START_GAME);
+				_room->InsertDataIntoBroadcastQueue(BroadcastType::TYPEWITHOUTBODY, reinterpret_cast<ULONG_PTR>(type));
+				LeaveCriticalSection(&csForServerRoomList);
 			}
 			else
 			{
+				LeaveCriticalSection(&csForServerRoomList);
 				Data response;
 				(*response.mutable_datamap())["contentType"] = "REJECT_START_GAME";
 				(*response.mutable_datamap())["errorCode"] = "402";
@@ -763,27 +773,6 @@ void ServerManager::SendInitData(SocketInfo* lpSocketInfo) {
 	RecvPacket(lpSocketInfo);
 }
 
-void ServerManager::BroadcastMessage(Room * room, MessageLite * message, int type)
-{
-	auto begin = room->ClientSocketsBegin();
-	auto end = room->ClientSocketsEnd();
-
-	for (auto itr = begin; itr != end; itr++) {
-		if (message != nullptr) {
-			(*itr)->sendBuf->wsaBuf.len =
-				(*itr)->sendBuf->lpPacket->PackMessage(-1, message);
-			//fprintf(stderr, "Length: %d\n", (*itr)->sendBuf->wsaBuf.len);
-		}
-		else if(type != -1) {
-			(*itr)->sendBuf->wsaBuf.len =
-				(*itr)->sendBuf->lpPacket->PackMessage(type, nullptr);
-		}
-		
-		if (!SendPacket(*itr))
-			std::cout << "메시지 전송 실패쓰\n";
-	}
-}
-
 void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 {   //상당히 많은 부분이 LEAVE_GAMEROOM 부분과 겹치기 때문에 중복을 어케 처리할 필요가 있을듯
 	EnterCriticalSection(&csForClientLocationTable);
@@ -796,8 +785,6 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 
 		RoomInfo& roomInfo = (*roomList.mutable_rooms())[roomId];
 		bool isClosed = currentLocation->ProcessLeaveGameroomEvent(clientInstance, lpSocketInfo);
-		BroadcastMessage(currentLocation, &roomInfo);
-
 	
 		if (isClosed)
 		{ //방이 사라진 경우, 리소스 정리해야함
@@ -809,6 +796,11 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 			(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
 			LeaveCriticalSection(&csForRoomList);
 			delete currentLocation; // Room* 해제 여기서
+		}
+		else
+		{
+			currentLocation->InsertDataIntoBroadcastQueue(
+				BroadcastType::NON_DISPOSABLE, reinterpret_cast<ULONG_PTR>(&roomInfo));
 		}
 
 		LeaveCriticalSection(&csForServerRoomList);
