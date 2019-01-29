@@ -221,12 +221,19 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 			else {
 				printf("lpOverlapped is NULL!: %d\n", GetLastError());
 			}
-			continue;
+			//continue;
 		}
 
 		if (pMessage == NULL) {
 			ErrorHandling("Message is NULL....", false);
 			continue;
+		}
+
+		//JS TEST
+		if (reinterpret_cast<DWORD>(pMessage) == KILL_THREAD)
+		{
+			std::cout << "ACTION : KILL THREAD" << std::endl;
+			break;
 		}
 
 		// Broadcast

@@ -505,6 +505,8 @@ bool ServerManager::HandleWithoutBody(SocketInfo* lpSocketInfo, int& type)
 					EnterCriticalSection(&csForRoomList);
 					(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
 					LeaveCriticalSection(&csForRoomList);
+					//JS TEST
+					pRoom->InsertDataIntoBroadcastQueue(0, KILL_THREAD);
 					delete pRoom; // Room* 해제 여기서
 					LeaveCriticalSection(&csForServerRoomList);
 					return true;
@@ -795,6 +797,8 @@ void ServerManager::ProcessDisconnection(SocketInfo * lpSocketInfo)
 			EnterCriticalSection(&csForRoomList);
 			(*roomList.mutable_rooms()).erase(roomId); // RoomInfo* 전송용 리스트에서 제거 (자동으로 해제됨)
 			LeaveCriticalSection(&csForRoomList);
+			//JS TEST
+			currentLocation->InsertDataIntoBroadcastQueue(0, KILL_THREAD);
 			delete currentLocation; // Room* 해제 여기서
 		}
 		else
