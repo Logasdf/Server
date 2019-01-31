@@ -25,29 +25,127 @@ Packet::InvTypeMap Packet::invTypeMap = {
 
 Packet::Packet() 
 {
-	//memset(buffer, 0, FOR_IO_SIZE);
-	//memset(backup, 0, FOR_BAKCUP_SIZE);
-	//memset(pack, 0, FOR_PACK_SIZE);
-
-	//backupBufLength = packBufLength = packBufOffset = 0;
-	memset(buffer, 0, MAX_SIZE);
-	hMutexObj = CreateMutex(NULL, false, NULL);
+	backup = pack = nullptr;
+	backupLength = 0;
+	memset(buffer, 0, FOR_IO_SIZE);
 }
 
 Packet::~Packet() 
 {
-	if (hMutexObj != NULL)
-		CloseHandle(hMutexObj);
+
 }
 
-void Packet::ClearBuffer()
+int Packet::PackMessage(int type, MessageLite* message)
 {
-	memset(buffer, 0, FOR_IO_SIZE);
+	int msgLength = 8;
+	if (message != nullptr)
+		msgLength += message->ByteSize();
+
+	pack = new char[msgLength];
+	aos = new ArrayOutputStream(pack, msgLength);
+	cos = new CodedOutputStream(aos);
+
+	if (message == nullptr)
+	{
+		assert(type != -1);
+		cos->WriteLittleEndian32(type);
+		cos->WriteLittleEndian32(0);
+	}
+	else
+	{
+		Serialize(cos, message);
+	}
+
+	CopyMemory(buffer, pack, msgLength);
+
+	delete cos;
+	delete aos;
+	delete pack;
+	return msgLength;
 }
 
-bool Packet::GetTypeAndLength(int& type, int& length)
+void Packet::UnpackHeader(int& type, int& length)
 {
-	return false;
+	ais = new ArrayInputStream(pack, 8);
+	cis = new CodedInputStream(ais);
+
+	cis->ReadLittleEndian32((uint*)&type);
+	cis->ReadLittleEndian32((uint*)&length);
+
+	delete cis;
+	delete ais;
+}
+
+void Packet::UnpackMessage(int& readBytes)
+{
+	int totalLength = readBytes;
+	if (backup != nullptr)
+	{
+		//printf("[Backup] backupLength: %d, readBytes: %d\n", backupLength, readBytes);
+		pack = new char[backupLength + readBytes];
+		CopyMemory(pack, backup, backupLength);
+		CopyMemory(pack + backupLength, buffer, readBytes);
+
+		totalLength += backupLength;
+		delete backup;
+		backup = nullptr;
+		backupLength = 0;
+	}
+	else
+	{
+		pack = new char[readBytes];
+		CopyMemory(pack, buffer, readBytes);
+	}
+
+	int loop = 0;
+	int offset = 0;
+	while(offset < totalLength)
+	{
+		//printf("[Thread #%d:Loop #%d] totalLength: %d, offset: %d\n", 
+			//GetCurrentThreadId(), ++loop, totalLength, offset);
+
+		// Header크기 미만일 경우
+		if ((totalLength - offset) < 8)
+		{
+			//printf("Not Enough Message Header..\n");
+			BackupStream(offset, totalLength);
+			delete pack;
+			return;
+		}
+		
+		int type, length;
+		UnpackHeader(type, length);
+		offset += 8;
+		
+		MessageContext* msgContext = new MessageContext();
+		msgContext->header.type = (int)type;
+		msgContext->header.length = (int)length;
+		//printf("[Thread #%d:Loop #%d:Header] type: %d, length: %d\n",
+			//GetCurrentThreadId(), loop, msgContext->header.type, msgContext->header.length);
+
+		if (length == 0) 
+		{
+			msgQueue->push(msgContext);
+			continue;
+		}
+
+		if (length > (totalLength - offset))
+		{
+			//printf("[Thread #%d:Loop #%d:Body] type: %d, length: %d, totalLength: %d, offset: %d\n",
+				//GetCurrentThreadId(), loop,
+				//msgContext->header.type, msgContext->header.length, totalLength, offset);
+			BackupStream(offset, totalLength);
+			delete pack;
+			return;
+		}
+
+		Deserialize(type, length, offset, msgContext->message);
+		offset += length;
+
+		msgQueue->push(msgContext);
+	}
+
+	delete pack;
 }
 
 bool Packet::CheckValidType(int& type)
@@ -55,163 +153,12 @@ bool Packet::CheckValidType(int& type)
 	return invTypeMap.find(type) != invTypeMap.end();
 }
 
-//int Packet::PackMessage(int type, MessageLite* message)
-//{
-//	//WaitForSingleObject(hMutexObj, INFINITE);
-//	ClearBuffer();
-//	memset(pack, 0, FOR_PACK_SIZE);
-//
-//	aos = new ArrayOutputStream(pack, FOR_PACK_SIZE);
-//	cos = new CodedOutputStream(aos);
-//
-//	if (message != nullptr)
-//	{
-//		Serialize(cos, message);
-//	}
-//	else 
-//	{	
-//		assert(type != -1);
-//		cos->WriteLittleEndian32(type);
-//		cos->WriteLittleEndian32(0);
-//	}
-//
-//	int rtn = cos->ByteCount();
-//	memcpy(buffer, pack, rtn);
-//
-//	delete cos;
-//	delete aos;
-//	//ReleaseMutex(hMutexObj);
-//
-//	return rtn;
-//}
-//
-//bool Packet::UnpackMessage(DWORD& bytesTransferred, int& type, int& length, MessageLite*& message)
-//{
-//	WaitForSingleObject(hMutexObj, INFINITE);
-//
-//	packBufOffset = packBufLength = 0;
-//	memset(pack, 0, FOR_PACK_SIZE);
-//	// backup이 존재한다면
-//	if (backupBufLength > 0) {
-//		memcpy(pack, backup, backupBufLength);
-//		memcpy(pack + backupBufLength, buffer, (size_t)bytesTransferred);
-//		packBufLength = backupBufLength + bytesTransferred;
-//		//fprintf(stderr, "[In bakcup branch] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//	}
-//	else {
-//		memcpy(pack, buffer, (size_t)bytesTransferred);
-//		packBufLength = bytesTransferred;
-//		//fprintf(stderr, "[In buffer branch] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//	}
-//
-//	ais = new ArrayInputStream(pack, FOR_PACK_SIZE);
-//	cis = new CodedInputStream(ais);
-//
-//	// rtn의 값에 따라 추가 수신여부를 판단
-//	bool rtn = true;
-//	unsigned int _type, _length;
-//	while (packBufLength > 0) 
-//	{
-//		if (packBufLength < 8) {
-//			//fprintf(stderr, "packBufLength < 8 => Can't get header info...\n");
-//			//fprintf(stderr, "[After Length < 8] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//
-//			memset(backup, 0, FOR_BAKCUP_SIZE);
-//			memcpy(backup, pack + packBufOffset, packBufLength);
-//			backupBufLength = packBufLength;
-//			rtn = false;
-//			break;
-//		}
-//		cis->ReadLittleEndian32(&_type);
-//		type = (int)_type;
-//		packBufOffset += 4; packBufLength -= 4;
-//
-//		//fprintf(stderr, "[After Type] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//
-//		cis->ReadLittleEndian32(&_length);
-//		length = (int)_length;
-//		packBufOffset += 4; packBufLength -= 4;
-//
-//		//fprintf(stderr, "[After Length] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//
-//		//fprintf(stderr, "[After Type and Length] Type: %d, Body Length: %d\n", type, length);
-//		if (type == 0 && length == 0) break;
-//		if (length > 0)
-//		{	
-//			// Message Body가 정확히 Length와 일치할 때,
-//			if (length <= packBufLength) {
-//				Deserialize(type, cis, message);
-//				packBufOffset += length;
-//				packBufLength -= length;
-//
-//				fprintf(stderr, "[After Body] offset: %d, length: %d\n", packBufOffset, packBufLength);
-//			}
-//			else {
-//				memset(backup, 0, FOR_BAKCUP_SIZE);
-//				memcpy(backup, pack + packBufOffset - 8, packBufLength + 8);
-//				backupBufLength = packBufLength + 8;
-//				rtn = false;
-//				break;
-//			}
-//		}
-//	}
-//
-//	delete cis;
-//	delete ais;
-//	ClearBuffer();
-//	ReleaseMutex(hMutexObj);
-//	return rtn;
-//}
-
-
-int Packet::PackMessage(int type, MessageLite* message)
+void Packet::BackupStream(int& offset, int& totalLength)
 {
-	WaitForSingleObject(hMutexObj, INFINITE);
-
-	ClearBuffer();
-	aos = new ArrayOutputStream(buffer, MAX_SIZE);
-	cos = new CodedOutputStream(aos);
-
-	if (message != NULL)
-	{
-		Serialize(cos, message);
-	}
-	else
-	{
-		assert(type != -1);
-		cos->WriteLittleEndian32(type);
-		cos->WriteLittleEndian32(0);
-	}
-
-	int rtn = cos->ByteCount();
-
-	delete cos;
-	delete aos;
-
-	ReleaseMutex(hMutexObj);
-
-	return rtn;
-}
-
-void Packet::UnpackMessage(int& type, int& length, MessageLite*& message)
-{
-	WaitForSingleObject(hMutexObj, INFINITE);
-
-	ais = new ArrayInputStream(buffer, MAX_SIZE);
-	cis = new CodedInputStream(ais);
-
-	cis->ReadLittleEndian32((UINT*)&type);
-	cis->ReadLittleEndian32((UINT*)&length);
-	if (length != 0)
-	{
-		Deserialize(type, cis, message);
-	}
-
-	delete cis;
-	delete ais;
-	ClearBuffer();
-
-	ReleaseMutex(hMutexObj);
+	int remain = totalLength - offset;
+	backup = new char[remain];
+	backupLength = remain;
+	CopyMemory(backup, pack + offset, remain);
 }
 
 void Packet::Serialize(CodedOutputStream*& cos, MessageLite*& message)
@@ -226,7 +173,7 @@ void Packet::Serialize(CodedOutputStream*& cos, MessageLite*& message)
 	message->SerializeToCodedStream(cos);
 }
 
-void Packet::Deserialize(int& type, CodedInputStream*& cis, MessageLite*& message)
+void Packet::Deserialize(int& type, int& length, int& offset, MessageLite*& message)
 {
 	if (!CheckValidType(type)) {
 		fprintf(stderr, "Invalid type... %d\n", type);
@@ -257,12 +204,29 @@ void Packet::Deserialize(int& type, CodedInputStream*& cis, MessageLite*& messag
 		return;
 	}
 
-	message->ParseFromCodedStream(cis);
+	ais = new ArrayInputStream(pack + offset + 8, length);
+	cis = new CodedInputStream(ais);
+	bool check = message->ParseFromCodedStream(cis);
+	if (check) {
+		if (cis->ConsumedEntireMessage()) {
+			//printf("ConsumedEntireMessage return true!\n");
+		}
+		else {
+			printf("ConsumedEntireMessage return false!\n");
+		}
+	}
+	else {
+		printf("ParseFromCodedStream return false!\n");
+	}
+	delete cis;
+	delete ais;
 }
 
-Packet* Packet::AllocatePacket()
+Packet* Packet::AllocatePacket(queue<MessageContext*> *msgQueue)
 {
 	Packet* lpPacket = new Packet();
+	lpPacket->msgQueue = msgQueue;
+
 	return lpPacket;
 }
 

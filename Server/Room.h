@@ -4,6 +4,8 @@
 #include "protobuf/PlayState.pb.h"
 #include "forward_list"
 typedef google::protobuf::RepeatedPtrField<packet::Client>* Mutable_Team;
+typedef std::forward_list<SocketInfo*>::const_iterator SocketIterator;
+class ServerManager;
 
 class Room
 {
@@ -16,6 +18,7 @@ public:
 
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsBegin();
 	std::forward_list<SocketInfo*>::const_iterator ClientSocketsEnd();
+	void InsertDataIntoBroadcastQueue(DWORD, ULONG_PTR);
 
 	void ProcessReadyEvent(Client*& affectedClient);
 	Client* ProcessTeamChangeEvent(Client*& affectedClient);
@@ -25,10 +28,8 @@ public:
 	bool HasGameStarted() const;
 	void SetGameStartFlag(bool to);
 	
-
 	SocketInfo*& GetSocketUsingName(string& userName);
 
-	// Test for broadcast
 	void InitCompletionPort(int maxNumberOfThreads = 1);
 	void CreateThreadPool(int numOfThreads = 1);
 

@@ -9,8 +9,6 @@ public:
 	SocketInfo();
 	~SocketInfo();
 
-	void GetIpAndPort(char pIpAddress[], int& port);
-	
 public:
 	static SocketInfo* AllocateSocketInfo(const SOCKET& socket);
 	static void DeallocateSocketInfo(SocketInfo* lpSocketInfo);

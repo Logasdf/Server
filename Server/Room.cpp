@@ -199,6 +199,8 @@ void Room::CreateThreadPool(int numOfThreads)
 
 unsigned __stdcall Room::ThreadMain(void * pVoid)
 {
+	printf("[Room Thread #%d]\n", GetCurrentThreadId());
+
 	Room* self = (Room*)pVoid;
 	MessageLite* pMessage;
 	LPOVERLAPPED lpOverlapped;
@@ -233,19 +235,18 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 
 		auto begin = self->ClientSocketsBegin();
 		auto end = self->ClientSocketsEnd();
-		//printf("Broadcast!!\n");
+
 		for (auto itr = begin; itr != end; itr++) {
+			MessageContext msgContext;
 			if (pMessage != nullptr) {
-				(*itr)->sendBuf->wsaBuf.len =
-					(*itr)->sendBuf->lpPacket->PackMessage(-1, pMessage);
+				msgContext.message = pMessage;
 			}
 
-			if (!servManager.SendPacket(*itr))
+			if (!servManager.SendPacket(*itr, msgContext))
 				std::cout << "Send Message Failed\n";
 		}
 
 		LeaveCriticalSection(&self->csForBroadcast);
-		//test 
 		delete pMessage;
 	}
 

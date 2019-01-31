@@ -16,7 +16,7 @@ public:
 	void Start(int port=PORT);
 	void Stop();
 
-	bool SendPacket(SocketInfo* lpSocketInfo);
+	bool SendPacket(SocketInfo* lpSocketInfo, const MessageContext& msgContext);
 	bool RecvPacket(SocketInfo* lpSocketInfo);
 
 	static ServerManager& getInstance() {
@@ -41,8 +41,8 @@ private:
 	void CreateThreadPool(int numOfThreads = 0);
 	void ShutdownThreads();
 
-	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self);
-	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred, ServerManager* self);
+	bool HandleSendEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
+	bool HandleRecvEvent(SocketInfo* lpSocketInfo, DWORD dwBytesTransferred);
 	bool HandleWithoutBody(SocketInfo* lpSocketInfo, int& type);
 	bool HandleWithBody(SocketInfo* lpSocketInfo, MessageLite* message, int& type);
 
@@ -59,8 +59,6 @@ private:
 
 	int threadPoolSize;
 	HANDLE hMutexObj;
-	HANDLE hMutexForSend;
-	HANDLE hMutexForRecv;
 
 	int roomIdStatus;
 	RoomList roomList;

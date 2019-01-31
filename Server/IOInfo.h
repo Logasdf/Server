@@ -3,6 +3,8 @@
 #include "Packet.h"
 #include <WinSock2.h>
 #include <Windows.h>
+#include <queue>
+using std::queue;
 
 class IOInfo {
 public:
@@ -14,11 +16,24 @@ public:
 	static void DeallocateIoInfo(IOInfo* lpIoInfo);
 
 public:
+	bool Receive(const SOCKET& sock);
+	bool Send(const SOCKET& sock, const MessageContext& msgContext);
+	void HandleReceive(int readBytes);
+	bool HandleSend(const SOCKET& sock);
+
+	bool HasMessage();
+	MessageContext* NextMessage();
+
+private:
 	OVERLAPPED overlapped;
 	WSABUF wsaBuf;
 	Packet* lpPacket;
-	bool called;
 
-	bool isAcquired;
-	CRITICAL_SECTION csForSend;
+	queue<MessageContext*> msgQueue;
+
+	HANDLE hSemaForSend;
+
+public:
+	bool called;
+	MessageContext* ptr;
 };
