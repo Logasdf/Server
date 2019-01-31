@@ -214,6 +214,7 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 	
 		bool rtn = GetQueuedCompletionStatus(self->hCompPort, &dwBytesTransferred,
 			reinterpret_cast<ULONG_PTR*>(&pMessage), &lpOverlapped, INFINITE);
+
 		if (!rtn) {
 			if (lpOverlapped != NULL) {
 				printf("lpOverlapped is not NULL!: %d\n", GetLastError());
@@ -222,15 +223,15 @@ unsigned __stdcall Room::ThreadMain(void * pVoid)
 				printf("lpOverlapped is NULL!: %d\n", GetLastError());
 			}
 			//continue;
+			break;
 		}
 
 		if (pMessage == NULL) {
 			ErrorHandling("Message is NULL....", false);
 			continue;
 		}
-
 		//JS TEST
-		if (reinterpret_cast<DWORD>(pMessage) == KILL_THREAD)
+		else if (reinterpret_cast<DWORD>(pMessage) == KILL_THREAD)
 		{
 			std::cout << "ACTION : KILL THREAD" << std::endl;
 			break;
