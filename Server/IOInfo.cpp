@@ -60,19 +60,20 @@ bool IOInfo::Receive(const SOCKET& sock)
 	return true;
 }
 
-bool IOInfo::Send(const SOCKET& sock, const MessageContext& msgContext)
+bool IOInfo::Send(const SOCKET& sock, const MessageContext* msgContext)
 {
 	WaitForSingleObject(hSemaForSend, INFINITE);
 
-	ZeroMemory(wsaBuf.buf, FOR_IO_SIZE);
-	wsaBuf.len = lpPacket->PackMessage(msgContext.header.type, msgContext.message);
+	if (msgContext != nullptr) {
+		ZeroMemory(wsaBuf.buf, FOR_IO_SIZE);
+		wsaBuf.len = lpPacket->PackMessage(msgContext->header.type, msgContext->message);
+	}
 
 	DWORD dwSendBytes = 0;
 	DWORD dwFlags = 0;
 
 	ZeroMemory(&overlapped, sizeof(WSAOVERLAPPED));
 	int rtn = WSASend(sock, &wsaBuf, 1, &dwSendBytes, dwFlags, &overlapped, NULL);
-	//fprintf(stderr, "After Enter!\n");
 	if (rtn == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -82,7 +83,6 @@ bool IOInfo::Send(const SOCKET& sock, const MessageContext& msgContext)
 			return false;
 		}
 	}
-
 	return true;
 }
 
@@ -100,6 +100,19 @@ bool IOInfo::HandleSend(const SOCKET& sock)
 	long previous;
 	ReleaseSemaphore(hSemaForSend, 1, NULL);
 	return true;
+}
+
+void IOInfo::CopyRawToBuffer(const void* src, DWORD& length)
+{
+	wsaBuf.len = length;
+	ZeroMemory(wsaBuf.buf, FOR_IO_SIZE);
+	CopyMemory(wsaBuf.buf, src, length);
+}
+
+void IOInfo::CopyBufferToRaw(void* dst, DWORD& length)
+{
+	CopyMemory(dst, wsaBuf.buf, length);
+	ZeroMemory(wsaBuf.buf, FOR_IO_SIZE);
 }
 
 bool IOInfo::HasMessage()

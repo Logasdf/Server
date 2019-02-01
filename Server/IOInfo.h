@@ -17,9 +17,12 @@ public:
 
 public:
 	bool Receive(const SOCKET& sock);
-	bool Send(const SOCKET& sock, const MessageContext& msgContext);
+	bool Send(const SOCKET& sock, const MessageContext* msgContext);
 	void HandleReceive(int readBytes);
 	bool HandleSend(const SOCKET& sock);
+
+	void CopyRawToBuffer(const void* src, DWORD& length);
+	void CopyBufferToRaw(void* dst, DWORD& length);
 
 	bool HasMessage();
 	MessageContext* NextMessage();

@@ -204,7 +204,7 @@ void Packet::Deserialize(int& type, int& length, int& offset, MessageLite*& mess
 		return;
 	}
 
-	ais = new ArrayInputStream(pack + offset + 8, length);
+	ais = new ArrayInputStream(pack + offset, length);
 	cis = new CodedInputStream(ais);
 	bool check = message->ParseFromCodedStream(cis);
 	if (check) {
