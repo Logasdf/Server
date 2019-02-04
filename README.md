@@ -14,7 +14,7 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
     - Use "Protocol Buffer" for communication between the server(C++) and client(C#)  
 - Write codes for accepting connection requests from clients.
     - When the connection process is done, send the roomlist and username for the initialization on the client side.
-- Manage a list of gamerooms.  
+- Event Handling  
     - Send that list to a client  
         - Only when asked ( like a client clicks "Refresh" button )  
     - Create Game Room.
@@ -51,7 +51,7 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
             - Adjust the positions of clients affected by this move.
             - If the client is the host of the room, update RoomInfo::host value.
         - Broadcast the updated RoomInfo instance to the clients in the room.
-    - Leave the room.
+    - Leave the room
         - Request arrives from the client { type = LEAVE_GAMEROOM }
         - Get the Room instance where the client is currently located.
         - Call Room::ProcessLeaveGameroomEvent(Client*) function.
@@ -64,3 +64,7 @@ Others : Google Protocol Buffers for the data serialization between C++ and C#, 
             - Decrement RoomInfo::current by 1.
     - Chat
         - Message arrives from the client { type, Chat Message }
+        - Broadcast the Data-type object to the clients in the room.
+    - WorldState
+        - Clients regularly send the in-game information to the server.
+        - Broadcast the WorldState-type object to the clients in the room.
